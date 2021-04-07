@@ -1,5 +1,5 @@
 --[[*
-@authors Bas at Imagine Programming
+@authors Bas Groothedde at Imagine Programming
 @copyright Public Domain
 @description
 	<h2>class</h2>
