@@ -14,7 +14,7 @@
 	a <em>"bonus"</em> could be a positve value in one case or a negative value
 	in another, so long as the target is gaining some net benefit. The sign of
 	the value should not be assumed but, rather, tailored to apply a beneficial
-	(for bonus) or detramental (for penalty) affect.
+	affect (for bonus) or detramental affect (for penalty).
 	<br>
 	<br>
 	Also, any multiplicative value is treated as a percetage and should be a float value.
@@ -22,9 +22,9 @@
 	E.g.,
 	<br>
 	<ul>
-	<li>1 	 = 100%</li>
-	<li>0.2  = 20%</li>
-	<li>1.65 = 165%</li>
+		<li>1 	 = 100%</li>
+		<li>0.2  = 20%</li>
+		<li>1.65 = 165%</li>
 	</ul>
 	<br>
 	In order of altering affect intensity (descending):
@@ -41,11 +41,11 @@
 	V = [(V + Bb - Bp) * (1 + Mb - Mp)] + Ab - Ap
 	<br>
 	<br>
-	There may be some instances where a client may use several Protean objects but wants the
+	There may be some instances where a client may use several protean objects but wants the
 	same base value for all of them. In this case, it would be cumbersome to have to set the
-	base value for each Protean object. So, a Protean object may be told to use an external
-	reference for the base value. In this case, a table is provided to the Protean object with a key
-	of PROTEAN.EXTERNAL_INDEX and a number value. This allows for multiple Protean objects to reference
+	base value for each protean object. So, a protean object may be told to use an external
+	reference for the base value. In this case, a table is provided to the protean object with a key
+	of PROTEAN.EXTERNAL_INDEX and a number value. This allows for multiple protean objects to reference
 	the same base value without the need for resetting the base value of each object. Note: the table
 	input will have a metamethod (__index) added to it which will update the final value of the Protean objects
 	whenever the value is changed. If the table input already has a metamethod of __index, the Protean's __index

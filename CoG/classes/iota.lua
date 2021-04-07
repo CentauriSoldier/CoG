@@ -20,10 +20,14 @@
 		<br>
 		<p>Addded callback functions.</p>
 	</li>
+	<li>
+		<b>1.2</b>
+		<br>
+		<p>Removed dependence on AAA.</p>
+	</li>
 </ul>
 @website https://github.com/CentauriSoldier
 *]]
---TODO remove dependency on AAA
 assert(type(const) == "function", "const has not been loaded.");
 local sIota = 'iota';
 
@@ -135,8 +139,7 @@ end
 
 class "iota" {
 
-	__construct = function(...)
-		local this 		= arg[1];
+	__construct = function(this)
 		tIota[this] = {
 			callbacks 	 = {},
 			callbackArgs = {},
@@ -144,7 +147,7 @@ class "iota" {
 		};
 		local oIota = tIota[this];
 
-		--set up values
+		--setup values
 		for _, sName in pairs(IOTA()) do
 			oIota[sName] 			= 0;
 			--oIota.marker[sName] 	= 0;
@@ -159,9 +162,7 @@ class "iota" {
 	end,
 
 	--todo left/right checks
-	__add = function(...)
-		local this 			= arg[1];
-		local oiota 		= AAA.CheckTypes(sIota, "__add", arg, 2, {"iota"});
+	__add = function(this, oIota)
 		local oMe			= tIota[this];
 		local oRet 			= iota();
 		local nAddMinutes 	= 0;
@@ -169,18 +170,18 @@ class "iota" {
 		local nAddDays 		= 0;
 		local nAddYears 	= 0;
 
-		oRet[IOTA.SECONDS] 	= oMe[IOTA.SECONDS] 	+ oiota[IOTA.SECONDS];
-		oRet[IOTA.MINUTES] 	= oMe[IOTA.MINUTES] 	+ oiota[IOTA.MINUTES];
-		oRet[IOTA.HOURS] 	= oMe[IOTA.HOURS] 		+ oiota[IOTA.HOURS];
-		oRet[IOTA.DAYS] 	= oMe[IOTA.DAYS] 		+ oiota[IOTA.DAYS];
-		oRet[IOTA.YEARS] 	= oMe[IOTA.YEARS] 		+ oiota[IOTA.YEARS];
+		oRet[IOTA.SECONDS] 	= oMe[IOTA.SECONDS] 	+ oIota[IOTA.SECONDS];
+		oRet[IOTA.MINUTES] 	= oMe[IOTA.MINUTES] 	+ oIota[IOTA.MINUTES];
+		oRet[IOTA.HOURS] 	= oMe[IOTA.HOURS] 		+ oIota[IOTA.HOURS];
+		oRet[IOTA.DAYS] 	= oMe[IOTA.DAYS] 		+ oIota[IOTA.DAYS];
+		oRet[IOTA.YEARS] 	= oMe[IOTA.YEARS] 		+ oIota[IOTA.YEARS];
 
 		return levelValues(this);
 
 	end,
 
-	__tostring = function(...)
-		local oIota	= tIota[arg[1]];
+	__tostring = function(this)
+		local oIota	= tIota[this];
 
 		return "Year: "..oIota[IOTA.YEARS]..' '..
 			   string.format(" Day: %03d Hour: %02d", oIota[IOTA.DAYS], oIota[IOTA.HOURS]);
@@ -197,11 +198,8 @@ class "iota" {
 	--end,]]
 
 	--todo break this out into more functions
-	addValue = function(...)
-		local this			= arg[1];
+	addValue = function(this, sValueItem, nValue)
 		local oIota 		= tIota[this];
-		local sValueItem 	= arg[2];
-		local nValue 		= arg[3];
 
 		if oIota[sValueItem] then
 			--setMarker(oIota);
@@ -220,8 +218,8 @@ class "iota" {
 
 	end,finish this!]]
 
-	destroy = function(...)
-		tIota[arg[1]] = nil;
+	destroy = function(this)
+		tIota[this] = nil;
 	end,
 
 	--[[
@@ -239,29 +237,28 @@ class "iota" {
 	end,]]
 
 
-	getSeconds = function(...)
-		return tIota[arg[1]][IOTA.SECONDS];
+	getSeconds = function(this)
+		return tIota[this][IOTA.SECONDS];
 	end,
 
-	getMinutes = function(...)
-		return tIota[arg[1]][IOTA.MINUTES];
+	getMinutes = function(this)
+		return tIota[this][IOTA.MINUTES];
 	end,
 
-	getHours = function(...)
-		return tIota[arg[1]][IOTA.HOURS];
+	getHours = function(this)
+		return tIota[this][IOTA.HOURS];
 	end,
 
-	getDays = function(...)
-		return tIota[arg[1]][IOTA.DAYS];
+	getDays = function(this)
+		return tIota[this][IOTA.DAYS];
 	end,
 
-	getYears = function(...)
-		return tIota[arg[1]][IOTA.YEARS];
+	getYears = function(this)
+		return tIota[this][IOTA.YEARS];
 	end,
 
-	getValue = function(...)
-		local oIota 		= tIota[arg[1]];
-		local sValueItem 	= AAA.CheckTypes(sIota, 'getValue', arg, 2, {'string'});
+	getValue = function(this, sValueItem)
+		local oIota 		= tIota[this];
 		local nRet 			= 0;
 
 		if oIota[sValueItem] then
@@ -272,11 +269,8 @@ class "iota" {
 	end,
 
 	--TODO convert this function to work with the new aaa
-	multValue = function(...)
-		local this			= arg[1];
+	multValue = function(this, sValueItem, nValue)
 		local oIota 		= tIota[this];
-		local sValueItem 	= AAA.CheckTypes(sIota, 'multValue', arg, 2, {'string'});
-		local nValue 		= AAA.CheckTypes(sIota, 'multValue', arg, 3, {'number'});
 
 		if (oIota[sValueItem]) then
 			oIota[sValueItem] = oIota[sValueItem] * nValue;
@@ -287,15 +281,8 @@ class "iota" {
 	end,
 
 	--todo fix this, it should use levelValues
-	set = function(...)
-		local sFunction = 'set';
-		local this			= arg[1];
+	set = function(this, nYears, nDays, nHours, nMinutes, nSeconds)
 		local oIota 	= tIota[this];
-		local nYears 	= AAA.CheckTypes(sIota, sFunction, arg, 2, {'number'});
-		local nDays 	= AAA.CheckTypes(sIota, sFunction, arg, 3, {'number'});
-		local nHours 	= AAA.CheckTypes(sIota, sFunction, arg, 4, {'number'});
-		local nMinutes 	= AAA.CheckTypes(sIota, sFunction, arg, 5, {'number'});
-		local nSeconds 	= AAA.CheckTypes(sIota, sFunction, arg, 6, {'number'});
 
 		oIota[IOTA.YEARS] 	= T((nYears 	>= 0), 	nYears, 																		0);
 		oIota[IOTA.DAYS] 	= T((nDays 		>= 0), 	T((nDays 	< oIota.Max[IOTA.DAYS]), 	nDays, 		oIota.Max[IOTA.DAYS]), 		0);
@@ -306,13 +293,8 @@ class "iota" {
 		return this;
 	end,
 
-	setCallback = function(...)
-		local sFunction = 'setCallback';
-		local this		= arg[1];
-		local oIota 	= tIota[this];
-		local sFunction	= AAA.CheckTypes(sIota, sFunction, arg, 2, {'string'});
-		local fCallback	= AAA.CheckTypes(sIota, sFunction, arg, 3, {'function', 'nil'});
-		local tArgs		= AAA.CheckTypes(sIota, sFunction, arg, 4, {'table', 'nil'});
+	setCallback = function(this, sFunction, fCallback, tArgs)
+
 		--error(type(tIota[arg[1]]), 4)
 		if (oIota.callbacks[sFunction]) then
 			--local sType = type(fCallback);
@@ -329,10 +311,8 @@ class "iota" {
 		return this;
 	end,
 
-	setDays = function(...)
-		local this		= arg[1];
+	setDays = function(this, nDays)
 		local oIota 	= tIota[this];
-		local nDays 	= AAA.CheckTypes(sIota, 'setDays', arg, 2, {'number'});
 		local nMax 		= oIota.Max[IOTA.DAYS];
 
 		oIota[IOTA.DAYS] = T((nDays >= 0), T((nDays < nMax), nDays, nMax), 0);
@@ -340,10 +320,8 @@ class "iota" {
 	end,
 
 
-	setHours = function(...)
-		local this		= arg[1];
+	setHours = function(this, nHours)
 		local oIota 	= tIota[this];
-		local nHours 	= AAA.CheckTypes(sIota, 'setHours', arg, 2, {'number'});
 		local nMax = oIota.Max[IOTA.HOURS];
 
 		oIota[IOTA.HOURS] = T((nHours >= 0), T((nHours < nMax), nHours, nMax), 0);
@@ -351,10 +329,8 @@ class "iota" {
 	end,
 
 
-	setMinutes = function(...)
-		local this		= arg[1];
+	setMinutes = function(this, nMinutes)
 		local oIota 	= tIota[this];
-		local nMinutes 	= AAA.CheckTypes(sIota, 'setMinutes', arg, 2, {'number'});
 		local nMax = oIota.Max[IOTA.MINUTES];
 
 		oIota[IOTA.MINUTES] = T((nMinutes >= 0), T((nMinutes < nMax), nMinutes, nMax), 0);
@@ -362,30 +338,23 @@ class "iota" {
 	end,
 
 
-	setSeconds = function(...)
-		local this		= arg[1];
+	setSeconds = function(this, nSeconds)
 		local oIota 	= tIota[this];
-		local nSeconds 	= AAA.CheckTypes(sIota, 'setSeconds', arg, 2, {'number'});
 		local nMax = oIota.Max[IOTA.SECONDS];
 
 		oIota[IOTA.SECONDS] = T((nSeconds >= 0), T((nSeconds < nMax), nSeconds, nMax), 0);
 		return this;
 	end,
 
-	setYears = function(...)
-		local this		= arg[1];
+	setYears = function(this, nYears)
 		local oIota 	= tIota[this];
-		local nYears 	= AAA.CheckTypes(sIota, 'setYears', arg, 2, {'number'});
 
 		oIota[IOTA.YEARS] = T((nYears >= 0), nYears, 0);
 		return this;
 	end,
 
-	setValue = function(...)
-		local this			= arg[1];
+	setValue = function(this, sValueItem, nValue)
 		local oIota 		= tIota[this];
-		local sValueItem 	= AAA.CheckTypes(sIota, 'setValue', arg, 2, {'string'});
-		local nValue 		= AAA.CheckTypes(sIota, 'setValue', arg, 3, {'number'});
 
 		if (oIota[sValueItem]) then
 
