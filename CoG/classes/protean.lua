@@ -54,7 +54,7 @@
 @license <p>The Unlicense<br>
 <br>
 @moduleid protean
-@version 1.1
+@version 1.2
 @versionhistory
 <ul>
 	<li>
@@ -69,6 +69,11 @@
 		<p>Added the ability to enable or disable the callback function.</p>
 		<p>Added the ability to disable auto-calculation of the final value.</p>
 		<p>Added the ability to manually call for calculation of the final value.</p>
+	</li>
+	<li>
+		<b>1.2</b>
+		<br>
+		<p>Forced safe and default input for constructor.</p>
 	</li>
 </ul>
 @website https://github.com/CentauriSoldier
@@ -167,23 +172,22 @@ class "protean" {
 		@return oProtean protean A protean object.
 	!]]
 	__construct = function(this, nBaseValue, nBaseBonus, nBasePenalty, nMultiplicativeBonus, nMultiplicativePenalty, nAddativeBonus, nAddativePenalty, nMinLimit, nMaxLimit, fonChange, bAutoCalculate)
-		--TODO assertions for input values
 
 		tProteans[this] = {
-			[PROTEAN.VALUE.BASE]				= nBaseValue or 0,
-			[PROTEAN.BASE.BONUS] 				= nBaseBonus 				or 0,
-			[PROTEAN.BASE.PENALTY] 				= nBasePenalty 				or 0,
-			[PROTEAN.MULTIPLICATIVE.BONUS] 		= nMultiplicativeBonus 		or 0,
-			[PROTEAN.MULTIPLICATIVE.PENALTY] 	= nMultiplicativePenalty 	or 0,
-			[PROTEAN.ADDATIVE.BONUS] 			= nAddativeBonus 			or 0,
-			[PROTEAN.ADDATIVE.PENALTY] 			= nAddativePenalty 			or 0,
+			[PROTEAN.VALUE.BASE]				= type(nBaseValue) 				== "number" 	and nBaseValue 				or 0,
+			[PROTEAN.BASE.BONUS] 				= type(nBaseBonus) 				== "number"		and nBaseBonus  			or 0,
+			[PROTEAN.BASE.PENALTY] 				= type(nBasePenalty) 			== "number"		and nBasePenalty 			or 0,
+			[PROTEAN.MULTIPLICATIVE.BONUS] 		= type(nMultiplicativeBonus) 	== "number"		and nMultiplicativeBonus 	or 0,
+			[PROTEAN.MULTIPLICATIVE.PENALTY] 	= type(nMultiplicativePenalty) 	== "number"		and nMultiplicativePenalty 	or 0,
+			[PROTEAN.ADDATIVE.BONUS] 			= type(nAddativeBonus) 			== "number"		and nAddativeBonus 			or 0,
+			[PROTEAN.ADDATIVE.PENALTY] 			= type(nAddativePenalty) 		== "number"		and nAddativePenalty 		or 0,
 			[PROTEAN.VALUE.FINAL]				= 0, --this is (re)calcualted whenever another item is changed
-			[PROTEAN.LIMIT.MIN] 				= nMinLimit,
-			[PROTEAN.LIMIT.MAX] 				= nMaxLimit,
+			[PROTEAN.LIMIT.MIN] 				= type(nMinLimit) 				== "number"		and nMinLimit 				or nil,
+			[PROTEAN.LIMIT.MAX] 				= type(nMaxLimit) 				== "number"		and nMaxLimit				or nil,
 			--UseExternalValue					= ExternalTableIsValid(vBaseValue),
-			autoCalculate						= true,--bAutoCalculate
-			onChange 							= fonChange,
-			isCallbackActive					= false,
+			autoCalculate						= type(bAutoCalculate) 			== "boolean" 	and bAutoCalculate 			or true,
+			onChange 							= type(fonChange) 				== "function" 	and fonChange 				or nil,
+			isCallbackActive					= type(fonChange) 				== "function",
 		};
 
 		--calculate the final value for the first time
@@ -191,7 +195,7 @@ class "protean" {
 	end,
 
 	--[[!
-	@desc Adjusts the given value by the amount input. Note: if using an external table which contains the base value, and the type provided is PROTEAN.VALUE.BASE, nil will be returned. An external base value cannot be adjusted from inside the Protean	object (although the base bonus and base penalty may be).
+	@desc Adjusts the given value by the amount input. Note: if using an external table which contains the base value, and the type provided is PROTEAN.VALUE.BASE, nil will be returned. An external base value cannot be adjusted from inside the protean	object (although the base bonus and base penalty may be).
 	@func protean.adjust
 	@module protean
 	@param sType PROTEAN The type of value to adjust.
@@ -264,7 +268,7 @@ class "protean" {
 				end
 
 			elseif (sType == PROTEAN.VALUE.BASE) then
-
+				--TODO is the external table used still?
 				if (tProteans[this].UseExternalValue and ExternalTableIsValid(tProteans[this][PROTEAN.VALUE.BASE])) then
 					nRet = tProteans[this][PROTEAN.VALUE.BASE][PROTEAN.EXTERNAL_INDEX];
 				end

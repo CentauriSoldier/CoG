@@ -4,10 +4,11 @@
 # Credits
 Huge thanks to Bas Groothedde at Imagine Programming for creating the class module. If you'd like to see more of his code, you can visit his GitHub [here](https://github.com/imagine-programming).
 
-#More nfo on usage coming soon.
+# Work in Progress
+This project is in alpha so some of the code will not yet work. I will delete this message once the progect is in beta and ready for use.
 
 # Required Modules
-While the classes (listed below) are optional to your project, some depend on the scripts listed in this section and, as such, will not function without these being required. 
+While the classes (listed below) are optional to your project, some depend on the scripts listed in this section and, as such, will not function without these being required.
 
 ## Require Order
 * class
@@ -21,7 +22,7 @@ While the classes (listed below) are optional to your project, some depend on th
 This class is, in effect, a clock/calendar system. It requires the client to update it at the desired intervals but handles all the math and logic of the clock system whenever a change is made to any of the types (seconds, minutes, hours, etc.).
 
 ### Planned Features
-Add Day Names, Weeks, Months and Days in Each Month 
+Add Day Names, Weeks, Months and Days in Each Month
 
 ## point
 This is a very simple point class that has no private fields or methods.
