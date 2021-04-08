@@ -28,6 +28,14 @@
 assert(type(const) 		== "function", "const has not been loaded.");
 assert(type(protean)	== "function", "protean has not been loaded.");
 
+COMBATOR 					= const("COMBATOR", "This is the main combator const category.", true);
+COMBATOR.TO_HIT_MIN			= 0;
+COMBATOR.TO_HIT_MAX			= 1;
+COMBATOR.HIT_EVADE_MIN		= 2;
+COMBATOR.HIT_EVADE_MAX		= 3;
+COMBATOR.DAMAGE_REDUX_MIN	= 4;
+COMBATOR.DAMAGE_REDUX_MAX	= 5;
+
 local tCombator = {
 
 	Check = function(oCombator)

@@ -46,6 +46,9 @@ class "line" {
 
 	end,
 
+	__len = function(this)
+		return math.math.sqrt( (this.startPoint.x - this.endPoint.x) ^ 2 + (this.startPoint.y - this.endPoint.y) ^ 2);
+	end,
 
 	length = function(this)
 		return math.math.sqrt( (this.startPoint.x - this.endPoint.x) ^ 2 + (this.startPoint.y - this.endPoint.y) ^ 2);
@@ -81,6 +84,7 @@ class "line" {
 			end
 
 		end
+		
 
 		return bRet;
 	end,
