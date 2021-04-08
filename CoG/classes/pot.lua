@@ -1,3 +1,31 @@
+--[[*
+@authors Centauri Soldier
+@copyright Public Domain
+@description
+	<h2>pot</h2>
+	<p>A logical potentiometer object. The client can set minimum and maximum values for the object, as well as rate of increase/decrease.
+	By default, values are clamped at min and max; however, if the object is set to be revolving, any values which exceed the minimum or maximum
+	boundaries, are carried over. For eaxmple, imagine a pot is set to have a min value of 0 and a max of 100. Then, imagine its position is set to 120.
+	If revolving, it would have a final positional value of 20 and if not revolving its final positional value would be be 100.</p>
+@license <p>The Unlicense<br>
+<br>
+@moduleid pot
+@version 1.1
+@versionhistory
+<ul>
+	<li>
+		<b>1.0</b>
+		<br>
+		<p>Created the module.</p>
+	</li>
+	<li>
+		<b>1.1</b>
+		<br>
+		<p>Added the option for the potentiometer to be revolving.</p>
+	</li>
+</ul>
+@website https://github.com/CentauriSoldier
+*]]
 local tPots = {};
 
 local function setError()
@@ -73,7 +101,14 @@ end
 local function clampPosMin(oPot)
 
 	if (oPot.pos < oPot.min) then
-		oPot.pos = oPot.min;
+
+		if (oPot.isRevolving) then
+			oPot.pos = oPot.max + oPot.pos;
+			clampPosMin(oPot);
+		else
+			oPot.pos = oPot.min;
+		end
+
 	end
 
 end
@@ -81,7 +116,14 @@ end
 local function clampPosMax(oPot)
 
 	if (oPot.pos > oPot.max) then
-		oPot.pos = oPot.max;
+
+		if (oPot.isRevolving) then
+			oPot.pos = oPot.pos - oPot.max;
+			clampPosMax(oPot);
+		else
+			oPot.pos = oPot.max;
+		end
+
 	end
 
 end
@@ -166,7 +208,7 @@ class "pot" {
 		local oPot = tPots[this];
 		local nCount = 1;
 
-		if (type(nTimes) == "nunmber") then
+		if (type(nTimes) == "number") then
 			nCount = nTimes;
 		end
 
@@ -203,7 +245,7 @@ class "pot" {
 		local oPot = tPots[this];
 		local nCount = 1;
 
-		if (type(nTimes) == "nunmber") then
+		if (type(nTimes) == "number") then
 			nCount = nTimes;
 		end
 

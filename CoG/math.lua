@@ -1,3 +1,7 @@
+assert(type(const) == "function", "const has not been loaded.");
+MATH 		= const("MATH");
+MATH.UNDEF	= "undefined";
+
 --the Eucclidian algorithm for finding the gcf
 local function eucclidiangcf(nDividend, nDivisor)
 	local nRet = 0;

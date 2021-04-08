@@ -320,8 +320,8 @@ class "protean" {
 	!]]
 	setAutoCalculate = function(this, bFlag)
 
-		if (type(bFlag) == "boolean" and bFlag) then
-			tProteans[this].autoCalculate		 = true;
+		if (type(bFlag) == "boolean") then
+			tProteans[this].autoCalculate		 = bFlag;
 		else
 			tProteans[this].autoCalculate		 = false;
 		end
@@ -354,8 +354,8 @@ class "protean" {
 	!]]
 	setCallbackActive = function(this, bFlag)
 
-		if (type(bFlag) == "boolean" and bFlag) then
-			tProteans[this].isCallbackActive		 = true;
+		if (type(bFlag) == "boolean") then
+			tProteans[this].isCallbackActive		 = bFlag;
 		else
 			tProteans[this].isCallbackActive		 = false;
 		end

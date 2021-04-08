@@ -18,7 +18,7 @@
 </ul>
 @website https://github.com/CentauriSoldier
 *]]
-
+assert(type(const) == "function", "const has not been loaded.");
 
 class "point" {
 
@@ -81,9 +81,11 @@ class "point" {
 		return type(vRight) == "point" and this.x <= vRight.x and this.y <= vRight.y;
 	end,
 
+
 	__lt = function(this, vRight)
 		return type(vRight) == "point" and this.x < vRight.x and this.y < vRight.y;
 	end,
+
 
 	--[[__mul = function(this, vRight)
 		local sType = type(vRight);
@@ -98,6 +100,7 @@ class "point" {
 		return this;
 	end,]]
 
+
 	__sub = function(this, vRight)
 		local sType = type(vRight);
 
@@ -108,6 +111,35 @@ class "point" {
 
 	end,
 
+
+	distance = function(this, oOther)
+		local nRet = 0;
+
+		if (type(this) == "point" and type(oOther) == "point") then
+			nRet = math.math.sqrt( (this.x - oOther.x) ^ 2 + (this.y - oOther.y) ^ 2);
+		end
+
+		return nRet;
+
+	end,
+
+	slope = function(this, oOther)
+		local nRet = 0;
+
+		if (type(this) == "point" and type(oOther) == "point") then
+			nXDelta = this.x - oOther.x;
+			nYDelta = this.y - oOther.y;
+
+			if (nYDelta == 0) then
+				nRet = MATH.UNDEF;
+			else
+				nRet = math.atan(nYDelta / nXDelta);
+			end
+
+		end
+
+		return nRet;
+	end,
 };
 
 return point;

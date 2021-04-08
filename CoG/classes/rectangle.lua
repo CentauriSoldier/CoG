@@ -18,8 +18,8 @@
 </ul>
 @website https://github.com/CentauriSoldier
 *]]
-assert(type(shape) == "class", "Error loading the rectangle class. It depends on the shape class.")
-assert(type(point) == "class", "Error loading the rectangle class. It depends on the point class.")
+assert(type(shape) == "class", "Error loading the rectangle class. It depends on the shape class.");
+assert(type(point) == "class", "Error loading the rectangle class. It depends on the point class.");
 
 --VERTEX_TOP_LEFT 	= "topLeft";
 --VERTEX_TOP_RIGHT 	= "topRight";
@@ -27,7 +27,7 @@ assert(type(point) == "class", "Error loading the rectangle class. It depends on
 --VERTEX_BOTOM_LEFT 	= "bottomLeft";
 --VERTEX_CENTER	 	= "center";
 
-local function RecalculateVertices(this)
+local function recalculateVertices(this)
 	this.vertices.topRight 		= point(this.vertices.topLeft.x + this.width, this.vertices.topLeft.y);
 	this.vertices.bottomLeft 	= point(this.vertices.topLeft.x, this.vertices.topLeft.y + this.height);
 	this.vertices.bottomRight 	= point(this.vertices.topRight.x, this.vertices.bottomLeft.y);
@@ -66,7 +66,7 @@ class "rectangle" : extends(shape) {
 			this.height = nHeight;
 		end
 
-		RecalculateVertices(this);
+		recalculateVertices(this);
 	end,
 
 
@@ -98,8 +98,13 @@ class "rectangle" : extends(shape) {
 		return 2 * this.width + 2 * this.height;
 	end,
 
-	RecalculateVertices = function(this)
-		RecalculateVertices(this);
+--[[
+	pointIsOnPerimeter = function(this, vPoint, vY)
+
+	end
+]]
+	recalculateVertices = function(this)
+		recalculateVertices(this);
 	end,
 
 };
