@@ -11,7 +11,7 @@ While the classes (listed below) are optional to your project, some depend on th
 
 ## Require Order
 * class
-* const *this is required only if using the Lua version you're using is less than 5.4.*
+* const
 * math
 
 
