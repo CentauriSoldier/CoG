@@ -31,6 +31,7 @@
 assert(type(const) == "function", "const has not been loaded.");
 local sIota = 'iota';
 
+
 --set the constants for this class
 IOTA 						= const("IOTA");
 IOTA.YEARS					= "years";
@@ -39,7 +40,7 @@ IOTA.HOURS 					= "hours";
 IOTA.MINUTES 				= "minutes";
 IOTA.SECONDS 				= "seconds";
 IOTA.MAX					= const("IOTA.MAX", 'Max numbers for iota values.', true);
-IOTA.MAX.YEARS				= 9999999999;
+IOTA.MAX.YEARS				= 999999; --if you make this value larger, be sure to reduce the precache years max
 IOTA.MAX.DAYS 				= 365;
 IOTA.MAX.HOURS 				= 24;
 IOTA.MAX.MINUTES 			= 60;
@@ -51,7 +52,76 @@ IOTA.CALLBACK.ON_HOUR		= 'onHour';
 IOTA.CALLBACK.ON_DAY		= 'onDay';
 IOTA.CALLBACK.ON_YEAR		= 'onYear';
 
+
 local tIota = {};
+local tIotas = {};
+
+--localization
+local IOTA 		= IOTA;
+local math 		= math;
+local unpack 	= unpack;
+local type 		= type;
+local class 	= class;
+local pairs 	= pairs;
+local string 	= string;
+
+--=====================================================>
+-- 					String Precache
+--=====================================================>
+--this is the place that strings are stored for use by the __tostring method
+
+--used by the __tostring method
+local sBlank 	= "";
+local sYears 	= "";
+local sDays 	= "";
+local sHours 	= "";
+local sMinutes 	= "";
+local sSeconds 	= "";
+
+--CHANGE THESE TO YOUR LIKING
+local sYearPrefix 	= "Year: ";
+local sDayPrefix 	= " Day: ";
+local sHourPrefix 	= " Hour: ";
+local sMinutePrefix = " Minute: ";
+local sSecondPrefix = " Second: ";
+
+--DO NOT CHANGE THESE VALUES
+local PRECACHE_YEARS 	= 1;
+local PRECACHE_DAYS 	= 2;
+local PRECACHE_HOURS 	= 3;
+local PRECACHE_MINUTES 	= 4;
+local PRECACHE_SECONDS 	= 5;
+
+local tStringPreCache = {
+	[PRECACHE_YEARS] 	= {max = IOTA.MAX.YEARS, 	func = function(nValue) return sYearPrefix	..tostring(nValue) 				end},
+	[PRECACHE_DAYS] 	= {max = IOTA.MAX.DAYS, 	func = function(nValue) return sDayPrefix	..string.format("%03d", nValue) end},
+	[PRECACHE_HOURS] 	= {max = IOTA.MAX.HOURS, 	func = function(nValue) return sHourPrefix	..string.format("%02d", nValue) end},
+	[PRECACHE_MINUTES] 	= {max = IOTA.MAX.MINUTES, 	func = function(nValue) return sMinutePrefix..string.format("%02d", nValue) end},
+	[PRECACHE_SECONDS] 	= {max = IOTA.MAX.SECONDS, 	func = function(nValue) return sSecondPrefix..string.format("%02d", nValue) end},
+};
+
+--[[
+"Year: "..oIota[IOTA.YEARS]..' '..
+	  string.format(" Day: %03d Hour: %02d", oIota[IOTA.DAYS], oIota[IOTA.HOURS]);
+]]
+
+for nType = 1, #tStringPreCache do
+	--store the max value and function
+	local nMax = tStringPreCache[nType].max;
+	local func = tStringPreCache[nType].func;
+
+	--now, set the value to be a table
+	tStringPreCache[nType] = {};
+
+	--store the strings in the table
+	for x = 0, nMax do
+		tStringPreCache[nType][x] = func(x);
+	end
+
+end
+--=====================================================<
+
+
 
 --sets the marker before a change is made to the iota
 --[[local function setMarker(oIota)
@@ -67,7 +137,7 @@ end
 
 --TODO add onSecond callback method
 local function levelValues(this)
-	local oIota			= tIota[this];
+	local oIota			= tIotas[this];
 	local nMax 			= IOTA.MAX.SECONDS;
 	local nPreValue 	= 0;
 	local nPostValue	= 0;
@@ -140,12 +210,18 @@ end
 class "iota" {
 
 	__construct = function(this)
-		tIota[this] = {
-			callbacks 	 = {},
-			callbackArgs = {},
+		tIotas[this] = {
+			callbacks 	 	= {},
+			callbackArgs 	= {},
+			ShowYears 		= true,
+			ShowDays		= true,
+			ShowHours 		= true,
+			ShowMinutes		= true,
+			ShowSeconds 	= true,
+
 			--marker = {}, --used for tracking how much time has passed from one point to the next
 		};
-		local oIota = tIota[this];
+		local oIota = tIotas[this];
 
 		--setup values
 		for _, sName in pairs(IOTA()) do
@@ -163,7 +239,7 @@ class "iota" {
 
 	--todo left/right checks
 	__add = function(this, oIota)
-		local oMe			= tIota[this];
+		local oMe			= tIotas[this];
 		local oRet 			= iota();
 		local nAddMinutes 	= 0;
 		local nAddHours 	= 0;
@@ -181,15 +257,25 @@ class "iota" {
 	end,
 
 	__tostring = function(this)
-		local oIota	= tIota[this];
+		local oIota	= tIotas[this];
+		local tCache = tStringPreCache;
 
-		return "Year: "..oIota[IOTA.YEARS]..' '..
-			   string.format(" Day: %03d Hour: %02d", oIota[IOTA.DAYS], oIota[IOTA.HOURS]);
+		--TODO for some reason, hours and minutes are missing a space...find out why
+		--TODO create contingent for non-existent year strings
+		sYears 		= oIota.ShowYears 	and tCache[PRECACHE_YEARS][oIota[IOTA.YEARS]] 			or sBlank;
+		sDays 		= oIota.ShowDays 	and tCache[PRECACHE_DAYS][oIota[IOTA.DAYS]] 			or sBlank;
+		sHours 		= oIota.ShowHours 	and tCache[PRECACHE_HOURS][oIota[IOTA.HOURS]] 			or sBlank;
+		sMinutes 	= oIota.ShowMinutes and tCache[PRECACHE_MINUTES][oIota[IOTA.MINUTES]] 		or sBlank;
+		sSeconds 	= oIota.ShowSeconds and tCache[PRECACHE_SECONDS][oIota[IOTA.SECONDS]] 		or sBlank;
+
+		return sYears..sDays..sHours..sMinutes..sSeconds;
+		--return "Year: "..oIota[IOTA.YEARS]..' '..
+		--	   string.format(" Day: %03d Hour: %02d", oIota[IOTA.DAYS], oIota[IOTA.HOURS]);
 	end,
 
 
 	--__tostring = function(...)
-		--local oIota	= tIota[arg[1]];
+		--local oIota	= tIotas[arg[1]];
 
 		--return oIota[IOTA.YEARS]..':'..
 			--   string.format("%03d:%02d:%02d:%02d",
@@ -199,7 +285,7 @@ class "iota" {
 
 	--todo break this out into more functions
 	addValue = function(this, sValueItem, nValue)
-		local oIota 		= tIota[this];
+		local oIota 		= tIotas[this];
 
 		if oIota[sValueItem] then
 			--setMarker(oIota);
@@ -211,15 +297,29 @@ class "iota" {
 	end,
 
 	--[[addSeconds = function(...)
-		local oIota 		= tIota[];
+		local oIota 		= tIotas[];
 		local sValueItem 	= arg[2];
 		local nValue 		= arg[3];
 
 
 	end,finish this!]]
 
+	deserialize = function(this, sData)
+		local oIota = tIotas[this];
+		local tData = deserialize(sData);
+
+			oIota[IOTA.SECONDS]	= tData[IOTA.SECONDS];
+			oIota[IOTA.MINUTES]	= tData[IOTA.MINUTES];
+			oIota[IOTA.HOURS]	= tData[IOTA.HOURS];
+			oIota[IOTA.DAYS]	= tData[IOTA.DAYS];
+			oIota[IOTA.YEARS]	= tData[IOTA.YEARS];
+
+		return this;
+	end,
+
 	destroy = function(this)
-		tIota[this] = nil;
+		tIotas[this] = nil;
+		this = nil;
 	end,
 
 	--[[
@@ -238,27 +338,27 @@ class "iota" {
 
 
 	getSeconds = function(this)
-		return tIota[this][IOTA.SECONDS];
+		return tIotas[this][IOTA.SECONDS];
 	end,
 
 	getMinutes = function(this)
-		return tIota[this][IOTA.MINUTES];
+		return tIotas[this][IOTA.MINUTES];
 	end,
 
 	getHours = function(this)
-		return tIota[this][IOTA.HOURS];
+		return tIotas[this][IOTA.HOURS];
 	end,
 
 	getDays = function(this)
-		return tIota[this][IOTA.DAYS];
+		return tIotas[this][IOTA.DAYS];
 	end,
 
 	getYears = function(this)
-		return tIota[this][IOTA.YEARS];
+		return tIotas[this][IOTA.YEARS];
 	end,
 
 	getValue = function(this, sValueItem)
-		local oIota 		= tIota[this];
+		local oIota 		= tIotas[this];
 		local nRet 			= 0;
 
 		if oIota[sValueItem] then
@@ -270,7 +370,7 @@ class "iota" {
 
 	--TODO convert this function to work with the new aaa
 	multValue = function(this, sValueItem, nValue)
-		local oIota 		= tIota[this];
+		local oIota 		= tIotas[this];
 
 		if (oIota[sValueItem]) then
 			oIota[sValueItem] = oIota[sValueItem] * nValue;
@@ -280,9 +380,30 @@ class "iota" {
 		return this;
 	end,
 
+	--[[!
+		@desc Serializes the object's data.
+		@func iota.serialize
+		@module iota
+		@param bDefer boolean Whether or not to return a table of data to be serialized instead of a serialize string (if deferring serializtion to another object).
+		@ret sData StringOrTable The data, returned as a serialized table (string) or a table is the defer option is set to true.
+	!]]
+	serialize = function(this)
+		local oIota = tIotas[this];
+
+		local tData = {
+			[IOTA.SECONDS]	= oIota[IOTA.SECONDS],
+			[IOTA.MINUTES]	= oIota[IOTA.MINUTES],
+			[IOTA.HOURS]	= oIota[IOTA.HOURS],
+			[IOTA.DAYS]		= oIota[IOTA.DAYS],
+			[IOTA.YEARS]	= oIota[IOTA.YEARS],
+		};
+
+		return serialize.table(tData);
+	end,
+
 	--todo fix this, it should use levelValues
 	set = function(this, nYears, nDays, nHours, nMinutes, nSeconds)
-		local oIota 	= tIota[this];
+		local oIota 	= tIotas[this];
 
 		oIota[IOTA.YEARS] 	= T((nYears 	>= 0), 	nYears, 																		0);
 		oIota[IOTA.DAYS] 	= T((nDays 		>= 0), 	T((nDays 	< oIota.Max[IOTA.DAYS]), 	nDays, 		oIota.Max[IOTA.DAYS]), 		0);
@@ -294,8 +415,9 @@ class "iota" {
 	end,
 
 	setCallback = function(this, sFunction, fCallback, tArgs)
+		local oIota 	= tIotas[this];
 
-		--error(type(tIota[arg[1]]), 4)
+		--error(type(tIotas[arg[1]]), 4)
 		if (oIota.callbacks[sFunction]) then
 			--local sType = type(fCallback);
 
@@ -311,8 +433,9 @@ class "iota" {
 		return this;
 	end,
 
+
 	setDays = function(this, nDays)
-		local oIota 	= tIota[this];
+		local oIota 	= tIotas[this];
 		local nMax 		= oIota.Max[IOTA.DAYS];
 
 		oIota[IOTA.DAYS] = T((nDays >= 0), T((nDays < nMax), nDays, nMax), 0);
@@ -321,7 +444,7 @@ class "iota" {
 
 
 	setHours = function(this, nHours)
-		local oIota 	= tIota[this];
+		local oIota 	= tIotas[this];
 		local nMax = oIota.Max[IOTA.HOURS];
 
 		oIota[IOTA.HOURS] = T((nHours >= 0), T((nHours < nMax), nHours, nMax), 0);
@@ -330,7 +453,7 @@ class "iota" {
 
 
 	setMinutes = function(this, nMinutes)
-		local oIota 	= tIota[this];
+		local oIota 	= tIotas[this];
 		local nMax = oIota.Max[IOTA.MINUTES];
 
 		oIota[IOTA.MINUTES] = T((nMinutes >= 0), T((nMinutes < nMax), nMinutes, nMax), 0);
@@ -339,7 +462,7 @@ class "iota" {
 
 
 	setSeconds = function(this, nSeconds)
-		local oIota 	= tIota[this];
+		local oIota 	= tIotas[this];
 		local nMax = oIota.Max[IOTA.SECONDS];
 
 		oIota[IOTA.SECONDS] = T((nSeconds >= 0), T((nSeconds < nMax), nSeconds, nMax), 0);
@@ -347,14 +470,14 @@ class "iota" {
 	end,
 
 	setYears = function(this, nYears)
-		local oIota 	= tIota[this];
+		local oIota 	= tIotas[this];
 
 		oIota[IOTA.YEARS] = T((nYears >= 0), nYears, 0);
 		return this;
 	end,
 
 	setValue = function(this, sValueItem, nValue)
-		local oIota 		= tIota[this];
+		local oIota 		= tIotas[this];
 
 		if (oIota[sValueItem]) then
 
@@ -376,6 +499,31 @@ class "iota" {
 
 		end
 
+		return this;
+	end,
+
+	showYears = function(this, bFlag)
+		tIotas[this].ShowYears = type(bFlag) == "boolean" and bFlag or false;
+		return this;
+	end,
+
+	showDays = function(this, bFlag)
+		tIotas[this].ShowDays = type(bFlag) == "boolean" and bFlag or false;
+		return this;
+	end,
+
+	showHours = function(this, bFlag)
+		tIotas[this].ShowHours = type(bFlag) == "boolean" and bFlag or false;
+		return this;
+	end,
+
+	showMinutes = function(this, bFlag)
+		tIotas[this].ShowMinutes = type(bFlag) == "boolean" and bFlag or false;
+		return this;
+	end,
+
+	showSeconds = function(this, bFlag)
+		tIotas[this].ShowSeconds = type(bFlag) == "boolean" and bFlag or false;
 		return this;
 	end,
 

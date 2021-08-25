@@ -15,6 +15,13 @@ class "action" {
 
 	end,
 
+	destroy = function(this)
+		tActions[this].cost:destroy()
+		tActions[this].regenAmount:destroy()
+		tActions[this] = nil;
+		this = nil;
+	end,
+
 	getCost = function(this)
 		return tActions[this].cost;
 	end,
@@ -32,3 +39,5 @@ class "action" {
 		return this;
 	end,
 };
+
+return action;

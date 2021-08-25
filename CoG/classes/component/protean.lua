@@ -54,7 +54,7 @@
 @license <p>The Unlicense<br>
 <br>
 @moduleid protean
-@version 1.2
+@version 1.3
 @versionhistory
 <ul>
 	<li>
@@ -75,41 +75,173 @@
 		<br>
 		<p>Forced safe and default input for constructor.</p>
 	</li>
+	<li>
+		<b>1.3</b>
+		<br>
+		<p>Added a linker system allowing multiple protean objects to share the same base value. This makes for much faster processing of proteans which have a common base value.</p>
+	</li>
 </ul>
 @website https://github.com/CentauriSoldier
 *]]
 assert(type(const) == "function", "const has not been loaded.");
 PROTEAN							= const("PROTEAN");
 PROTEAN.BASE					= const("PROTEAN.BASE", "", true);
-PROTEAN.BASE.BONUS				= "Base Bonus";
-PROTEAN.BASE.PENALTY 			= "Base Penalty";
+PROTEAN.BASE.BONUS				= 1;--"Base Bonus";
+PROTEAN.BASE.PENALTY 			= 2;--"Base Penalty";
 PROTEAN.MULTIPLICATIVE			= const("PROTEAN.MULTIPLICATIVE", "", true);
-PROTEAN.MULTIPLICATIVE.BONUS	= "Multiplicative Bonus";
-PROTEAN.MULTIPLICATIVE.PENALTY	= "Multiplicative Penalty";
+PROTEAN.MULTIPLICATIVE.BONUS	= 3;--"Multiplicative Bonus";
+PROTEAN.MULTIPLICATIVE.PENALTY	= 4;--"Multiplicative Penalty";
 PROTEAN.ADDATIVE				= const("PROTEAN.ADDATIVE", "", true);
-PROTEAN.ADDATIVE.BONUS			= "Addative Bonus";
-PROTEAN.ADDATIVE.PENALTY 		= "Addative Penalty";
+PROTEAN.ADDATIVE.BONUS			= 5;--"Addative Bonus";
+PROTEAN.ADDATIVE.PENALTY 		= 6;--"Addative Penalty";
 PROTEAN.VALUE					= const("PROTEAN.VALUE");
-PROTEAN.VALUE.BASE				= "Base Value";
-PROTEAN.VALUE.FINAL				= "Final Value";
+PROTEAN.VALUE.BASE				= 7;--"Base Value";
+PROTEAN.VALUE.FINAL				= 8;--"Final Value";
 PROTEAN.LIMIT					= const("PROTEAN.LIMIT");
-PROTEAN.LIMIT.MIN				= "Minimum Limit";
-PROTEAN.LIMIT.MAX				= "Maximum Limit";
+PROTEAN.LIMIT.MIN				= 9;--"Minimum Limit";
+PROTEAN.LIMIT.MAX				= 10;--"Maximum Limit";
 --PROTEAN.EXTERNAL_INDEX			= "Protean External Index";
 
+local PROTEAN = PROTEAN;
+
 local tProteans = {};
+
+--[[
+ Stores linkers for protean objects with a shared base value.
+ The table is structure is as follows:
+ tHub[nLinkerID] = {
+ 		baseValue = x,
+		index = {--for fast existential queries of a protean object within a linker
+			proteanobject1 = true,
+			proteanobject2 = true,
+			etc...
+		}
+ 		proteans = {
+			[1] = proteanobject1,
+			[2] = proteanobject2,
+			etc...
+		},
+	};
+]]
+local tHub = {};
+
+--[[!
+	@desc
+	@mod
+	@param this
+	@param nLinkerID
+	@scope local
+!]]
+local function linkerIDIsValid(nLinkerID)
+	return type(nLinkerID) == "number" and math.floor(nLinkerID) == nLinkerID and nLinkerID > 0 and tHub[nLinkerID];
+end
+
+--[[!
+	@desc
+	@mod
+	@param this
+	@param nLinkerID
+	@scope local
+!]]
+local function unlink(this)
+	local oProtean = tProteans[this];
+	local nLinkerID = oProtean.linkerID;
+
+	if (oProtean.isLinked and linkerIDIsValid(nLinkerID) and tHub[nLinkerID] and tHub[nLinkerID].index[this]) then
+		--reset the object's base value to the linker's base value
+		oProtean[PROTEAN.VALUE.BASE] = tHub[nLinkerID].baseValue;
+		--update its linked status and linkerID
+		oProtean.isLinked = false;
+		oProtean.linkerID = nil;
+
+		--remove the object from the linker
+		tHub[nLinkerID].index:remove(this);
+		tHub[nLinkerID].proteans:remove(nLinkerID);
+	end
+
+end
+
+--[[!
+	@desc Links a protean object to the specified (or new) linker. If the object is currently linked to another linker, it will be unlinked from that linker.
+	@mod protean
+	@param nLinkerID number The linker ID; that is, the ID of the linker to which the protean will be linked. If this is nil or otherwise invalid, a new linker will be created.
+	@scope local
+!]]
+local function link(this, nLinkerID)
+	local oProtean 	= tProteans[this];
+	local nLinkers 	= #tHub;
+	nLinkerID		= linkerIDIsValid(nLinkerID) and nLinkerID or nLinkers + 1;
+
+	--create the linker if it doesn't exist
+	if (not tHub[nLinkerID]) then
+		tHub[nLinkerID] = {
+			--the new linker will start with the creating object's base value
+			baseValue = oProtean[PROTEAN.VALUE.BASE],
+			index = {},
+			proteans = {},
+		};
+	end
+
+	--link it only if it's not already linked
+	if (not tHub[nLinkerID].index[this]) then
+		--set the object's base value to be the same as the linker's
+		oProtean[PROTEAN.VALUE.BASE] = tHub[nLinkerID].baseValue;
+		--link the protean and update its settings
+		oProtean.isLinked = true;
+		oProtean.linkerID = nLinkerID;
+		--update the hub to reflect the new addition
+		tHub[nLinkerID].index[this] = true;
+		tHub[nLinkerID].proteans[#tHub[nLinkerID].proteans + 1] = this;
+	end
+
+	--now, make sure the protean isn't linked somewhere else
+
+	--initially indicate that the linker should not be removed
+	local nRemoveLinker = -1;
+
+	--check if the object is linked anywhere else and, if so, unlink it
+	for nHubLinkerID, tLinker in pairs(tHub) do
+
+		--don't operate on the linker known to contain this protean object
+		if (nLinkerID ~= nHubLinkerID) then
+
+			if (tLinker.index[this]) then
+				tLinker.index:remove(this);
+				tLinker.proteans:remove(nHubLinkerID);
+
+				--indicate that the linker needs to be removed
+				if (#tLinker == 0) then
+					nRemoveLinker = nHubLinkerID;
+				end
+
+				break;
+			end
+
+		end
+
+	end
+
+	--if the linker is empty, remove it
+	if (nRemoveLinker ~= -1 and tHub[nRemoveLinker]) then
+		tHub:remove(nRemoveLinker);
+	end
+
+end
 
 --local function ExternalTableIsValid(tTable)
 --	return type(tTable) == "table" and type(tTable[PROTEAN.EXTERNAL_INDEX]) == "number";
 --end
 
-local function calculateFinalValue(oProtean)
-	local nBase = oProtean[PROTEAN.VALUE.BASE];
 
-	--check for an external reference to the base value
-	--if (oProtean.UseExternalValue and ExternalTableIsValid(nBase)) then
---		nBase = oProtean[PROTEAN.VALUE.BASE][PROTEAN.EXTERNAL_INDEX];
---	end
+--[[!
+	@desc
+	@mod
+	@param this
+	@param nLinkerID
+	@scope local
+!]]
+local function calculateFinalValue(oProtean)
+	local nBase = (not oProtean.isLinked) and oProtean[PROTEAN.VALUE.BASE] or tHub[oProtean.linkerID].baseValue;
 
 	local nBaseBonus	= oProtean[PROTEAN.BASE.BONUS];
 	local nBasePenalty	= oProtean[PROTEAN.BASE.PENALTY];
@@ -121,21 +253,27 @@ local function calculateFinalValue(oProtean)
 	oProtean[PROTEAN.VALUE.FINAL] = ((nBase + nBaseBonus - nBasePenalty) * (1 + nMultBonus - nMultPenalty)) + nAddBonus - nAddPenalty;
 end
 
+--[[!
+	@desc
+	@mod
+	@param this
+	@param nLinkerID
+	@scope local
+!]]
 local function setValue(oProtean, sType, vValue)
 
 	if (sType ~= PROTEAN.VALUE.FINAL) then
 
 		--if a number was passed
 		if (type(vValue) == "number") then
+			--set the value
 			oProtean[sType] = vValue;
 
-			if (sType == PROTEAN.VALUE.BASE and oProtean.UseExternalValue) then
-				oProtean.UseExternalValue	= false;
+			--check if this object is linked and, if so, update the linker and it's proteans
+			if (oProtean.isLinked and sType == PROTEAN.VALUE.BASE) then
+				tHub[oProtean.linkerID].baseValue = vValue;
 			end
 
-		--if a proper, external table was passed (and the value being set is PROTEAN.VALUE.BASE)
-		--elseif (ExternalTableIsValid(vValue) and sType == PROTEAN.VALUE.BASE) then
-		--	oProtean.UseExternalValue = true;
 		end
 
 		if (oProtean.autoCalculate) then
@@ -146,7 +284,7 @@ local function setValue(oProtean, sType, vValue)
 	end
 
 	if (oProtean.isCallbackActive and type(oProtean.onChange) == "function") then
-		oProtean.onChange(oProtean);
+		oProtean:onChange(oProtean);
 	end
 
 	return oProtean[sType];
@@ -184,7 +322,8 @@ class "protean" {
 			[PROTEAN.VALUE.FINAL]				= 0, --this is (re)calcualted whenever another item is changed
 			[PROTEAN.LIMIT.MIN] 				= type(nMinLimit) 				== "number"		and nMinLimit 				or nil,
 			[PROTEAN.LIMIT.MAX] 				= type(nMaxLimit) 				== "number"		and nMaxLimit				or nil,
-			--UseExternalValue					= ExternalTableIsValid(vBaseValue),
+			linkerID							= nil,
+			isLinked							= false, --for fast queries
 			autoCalculate						= type(bAutoCalculate) 			== "boolean" 	and bAutoCalculate 			or true,
 			onChange 							= type(fonChange) 				== "function" 	and fonChange 				or nil,
 			isCallbackActive					= type(fonChange) 				== "function",
@@ -192,6 +331,8 @@ class "protean" {
 
 		--calculate the final value for the first time
 		calculateFinalValue(tProteans[this]);
+
+		return this;
 	end,
 
 	--[[!
@@ -203,11 +344,11 @@ class "protean" {
 	@return nValue number The adjusted value (or nil is PROTEAN.VALUE.BASE was input as the type).
 	!]]
 	adjust = function(this, sType, nValue)
+		local oProtean = tProteans[this];
+		if (oProtean[sType]) then
 
-		if (tProteans[this][sType]) then
-
-			if (type(vValue) == "number") then
-				return setValue(tProteans[this], sType, tProteans[this][sType] + vValue);
+			if (type(nValue) == "number") then
+				return setValue(oProtean, sType, oProtean[sType] + nValue);
 			end
 
 		end
@@ -223,6 +364,38 @@ class "protean" {
 	calulateFinalValue = function(this)
 		calculateFinalValue(oProtean);
 		return tProteans[this][PROTEAN.VALUE.FINAL];
+	end,
+
+	--[[!
+		@desc Deserializes data and sets the object's properties accordingly.
+		@func protean.deserialize
+		@module protean
+	!]]
+	deserialize = function(this, sTable)
+		local oProtean 	= tCharacters[this];
+		local tData 	= deserialize.table(sTable);
+
+		oProtean[PROTEAN.VALUE.BASE] 				= tData[PROTEAN.VALUE.BASE];
+		oProtean[PROTEAN.BASE.BONUS] 				= tData[PROTEAN.BASE.BONUS];
+		oProtean[PROTEAN.BASE.PENALTY] 				= tData[PROTEAN.BASE.PENALTY];
+		oProtean[PROTEAN.MULTIPLICATIVE.BONUS] 		= tData[PROTEAN.MULTIPLICATIVE.BONUS];
+		oProtean[PROTEAN.MULTIPLICATIVE.PENALTY] 	= tData[PROTEAN.MULTIPLICATIVE.PENALTY];
+		oProtean[PROTEAN.ADDATIVE.BONUS] 			= tData[PROTEAN.ADDATIVE.BONUS];
+		oProtean[PROTEAN.ADDATIVE.PENALTY]			= tData[PROTEAN.ADDATIVE.PENALTY];
+		oProtean[PROTEAN.VALUE.FINAL]				= tData[PROTEAN.VALUE.FINAL];
+		oProtean[PROTEAN.LIMIT.MIN]					= tData[PROTEAN.LIMIT.MIN];
+		oProtean[PROTEAN.LIMIT.MAX] 				= tData[PROTEAN.LIMIT.MAX];
+		oProtean.isLinked							= tData.isLinked;
+		oProtean.linkerID							= tData.linkerID;
+		oProtean.autoCalculate						= tData.autoCalculate;
+		oProtean.onChange						 	= tData.onChange;
+		oProtean.isCallbackActive 					= tData.isCallbackActive;
+
+		--relink this object if it was before
+		if (bIsLinked) then
+			link(this, tData.linkerID);
+		end
+
 	end,
 
 	--[[!
@@ -244,40 +417,44 @@ class "protean" {
 	!]]
 	get = function(this, sType)
 		local nRet = 0;
+		local oProtean = tProteans[this];
+		sType = type(oProtean[sType]) ~= nil and sType or PROTEAN.VALUE.FINAL;
 
-		if (tProteans[this][sType]) then
-			nRet = tProteans[this][sType];
+		nRet = oProtean[sType];
 
-			if (sType == PROTEAN.VALUE.FINAL) then
+		if (sType == PROTEAN.VALUE.FINAL) then
 
-				--clamp the value if it has been limited
-				if (tProteans[this][PROTEAN.LIMIT.MIN]) then
+			--clamp the value if it has been limited
+			if (oProtean[PROTEAN.LIMIT.MIN]) then
 
-					if (nRet < tProteans[this][PROTEAN.LIMIT.MIN]) then
-						nRet = tProteans[this][PROTEAN.LIMIT.MIN];
-					end
-
+				if (nRet < oProtean[PROTEAN.LIMIT.MIN]) then
+					nRet = oProtean[PROTEAN.LIMIT.MIN];
 				end
 
-				if (tProteans[this][PROTEAN.LIMIT.MAX]) then
+			end
 
-					if (nRet > tProteans[this][PROTEAN.LIMIT.MAX]) then
-						nRet = tProteans[this][PROTEAN.LIMIT.MAX];
-					end
+			if (oProtean[PROTEAN.LIMIT.MAX]) then
 
+				if (nRet > oProtean[PROTEAN.LIMIT.MAX]) then
+					nRet = oProtean[PROTEAN.LIMIT.MAX];
 				end
 
-			elseif (sType == PROTEAN.VALUE.BASE) then
-				--TODO is the external table used still?
-				if (tProteans[this].UseExternalValue and ExternalTableIsValid(tProteans[this][PROTEAN.VALUE.BASE])) then
-					nRet = tProteans[this][PROTEAN.VALUE.BASE][PROTEAN.EXTERNAL_INDEX];
-				end
+			end
 
+		elseif (sType == PROTEAN.VALUE.BASE) then
+
+			if (oProtean.isLinked) then
+				nRet = tHub[oProtean.linkerID].baseValue;
 			end
 
 		end
 
 		return nRet;
+	end,
+
+
+	getLinkerID = function(this)
+		return tProteans[this].linkerID;
 	end,
 
 	--[[!
@@ -300,18 +477,23 @@ class "protean" {
 		return tProteans[this].isCallbackActive;
 	end,
 
+	isLinked = function(this)
+		return tProteans[this].isLinked;
+	end,
+
 	--[[!
-		@desc Set the given value type to the value input. Note: if using an external table which contains the base value, and the type provided is PROTEAN.VALUE.BASE, this object will stop using the external value and will use the value input.
+		@desc Set the given value type to the value input. Note: if this object is linked, and the type provided is PROTEAN.VALUE.BASE, this linker's base value will also change, affecting every other linked object's base value.
 		@func protean.set
 		@module protean
 		@param sType PROTEAN The type of value to adjust.
 		@param nValue number The value which to set given value type.
 		@return nValue number The new value.
 	!]]
-	set = function(this, sType, vValue)
+	set = function(this, sType, nValue)
+		local oProtean = tProteans[this];
 
-		if (tProteans[this][sType]) then
-			return setValue(tProteans[this], sType, vValue);
+		if (oProtean[sType]) then
+			return setValue(oProtean, sType, nValue);
 		end
 
 	end,
@@ -351,6 +533,43 @@ class "protean" {
 	end,
 
 	--[[!
+		@desc Serializes the object's data. Note: This does NOT serialize callback functions.
+		@func protean.serialize
+		@module protean
+		@param bDefer boolean Whether or not to return a table of data to be serialized instead of a serialize string (if deferring serializtion to another object).
+		@ret sData StringOrTable The data returned as a serialized table (string) or a table is the defer option is set to true.
+	!]]
+	serialize = function(this, bDefer)
+		local oProtean = tProteans[this];
+
+
+		local tData = {
+			[PROTEAN.VALUE.BASE]				= oProtean.isLinked and tHub[oProtean.linkerID].baseValue or oProtean[PROTEAN.VALUE.BASE],
+			[PROTEAN.BASE.BONUS] 				= oProtean[PROTEAN.BASE.BONUS],
+			[PROTEAN.BASE.PENALTY] 				= oProtean[PROTEAN.BASE.PENALTY],
+			[PROTEAN.MULTIPLICATIVE.BONUS] 		= oProtean[PROTEAN.MULTIPLICATIVE.BONUS],
+			[PROTEAN.MULTIPLICATIVE.PENALTY] 	= oProtean[PROTEAN.MULTIPLICATIVE.PENALTY],
+			[PROTEAN.ADDATIVE.BONUS] 			= oProtean[PROTEAN.ADDATIVE.BONUS],
+			[PROTEAN.ADDATIVE.PENALTY] 			= oProtean[PROTEAN.ADDATIVE.PENALTY],
+			[PROTEAN.VALUE.FINAL]				= oProtean[PROTEAN.VALUE.FINAL],
+			[PROTEAN.LIMIT.MIN] 				= oProtean[PROTEAN.LIMIT.MIN],
+			[PROTEAN.LIMIT.MAX] 				= oProtean[PROTEAN.LIMIT.MAX],
+			isLinked							= oProtean.isLinked,
+			linkerID							= oProtean.linkerID,
+			autoCalculate						= oProtean.autoCalculate,
+			onChange 							= oProtean.onChange,
+			isCallbackActive					= oProtean.isCallbackActive,
+		};
+
+		if (not bDefer) then
+			tData = serialize.table(tData);
+		end
+
+		return tData;
+	end,
+
+
+	--[[!
 		@desc Set the object's callback function (if any) to active/inactive. If active, it will fire whenever a change is made while nothing will occur if it is inactive.
 		@func protean.setCallbackActive
 		@module protean
@@ -364,7 +583,40 @@ class "protean" {
 			tProteans[this].isCallbackActive		 = false;
 		end
 
+		return this;
 	end,
+
+
+	--[[!
+		@desc Links, relinks or unlinks this object based on the input.
+		@func protean.setLinker
+		@module protean
+		@param vLinkerID number If this is a number, the object will be linked to the provided linerkID (if valid). If the input linkerID is invalid, a proper one will be created. If the linkerID is nil, the object will be unlinked (if already linked).
+		@return oProtean protean This protean object.
+	!]]
+	setLinker = function(this, nLinkerID)
+		local sLinkerIDType = type(nLinkerID);
+
+		if (sLinkerIDType == "number") then
+			link(this, nLinkerID);
+
+		elseif (sLinkerIDType == nil) then
+			unlink(this);
+		end
+
+		return this;
+	end,
+
 }
+
+--[[!
+	@desc returns a number that is one greater than the maximum number of linkers in the Hub. This is used for determining the next, empty, available linker ID.
+	@func protean.getAvailableLinkerID
+	@module protean
+	@return nLinkerID number The next open index in the Hub.
+!]]
+function protean.getAvailableLinkerID()
+	return #tHub + 1;
+end
 
 return protean;

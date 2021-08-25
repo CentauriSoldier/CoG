@@ -23,7 +23,7 @@ function math.clamp(nValue, nMinValue, nMaxValue)
 
 	if (nRet < nMinValue) then
 		nRet = nMinValue;
-	elseif (nRet < nMaxValue) then
+	elseif (nRet > nMaxValue) then
 		nRet = nMaxValue;
 	end
 
@@ -120,11 +120,28 @@ function math.isinteger(nValue)
 	return (nValue == math.floor(nValue));
 end
 
-function math.isodd(nValue)
+function math.isodd(nValue)--TODO check if this is an integer first
 	return (nValue % 2 ~= 0);
 end
 
 function math.ratio(nLeft, nRight)
 	local nGCD = math.gcf(nLeft, nRight);
 	return 	{left = nLeft / nGCD, right = nRight / nGCD};
+end
+
+function math.rgbtolong(nR, nG, nB)
+	return nR + nG * 256 + nB * 65536;
+end
+
+--TODO fix this! the math is wrong...find a good example
+function math.longtorgb(nValue)
+	local nBlue		= math.floor(nValue / 65536);
+	local nGreen 	= math.floor((nValue % 65536) / 256);
+	local nRed		= nValue % 256;
+
+	return {
+		r = nRed,
+		g = nGreen,
+		b = nBlue,
+	};
 end

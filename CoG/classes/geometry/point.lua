@@ -15,10 +15,24 @@
 		<br>
 		<p>Created the module.</p>
 	</li>
+	<li>
+		<b>1.1</b>
+		<br>
+		<p>Add serialize and deserialize methods.</p>
+	</li>
 </ul>
 @website https://github.com/CentauriSoldier
 *]]
 assert(type(const) == "function", "const has not been loaded.");
+assert(type(serialize) 		== "table", 	"Error loading the point class. It depends on serialize.");
+assert(type(deserialize)	== "table", 	"Error loading the point class. It depends on deserialize.");
+
+--localization
+local class 		= class;
+local serialize		= serialize;
+local deserialize	= deserialize;
+local type 			= type;
+local math			= math;
 
 class "point" {
 
@@ -111,6 +125,14 @@ class "point" {
 
 	end,
 
+	deserialize = function(this, sData)
+		local tData = deserialize.table(sData);
+
+		this.x = tData.x;
+		this.y = tData.y;
+
+		return this;
+	end,
 
 	distance = function(this, oOther)
 		local nRet = 0;
@@ -120,7 +142,26 @@ class "point" {
 		end
 
 		return nRet;
+	end,
 
+	--[[!
+		@desc Serializes the object's data.
+		@func point.serialize
+		@module point
+		@param bDefer boolean Whether or not to return a table of data to be serialized instead of a serialize string (if deferring serializtion to another object).
+		@ret sData StringOrTable The data returned as a serialized table (string) or a table is the defer option is set to true.
+	!]]
+	serialize = function(this, bDefer)
+		local tData = {
+			x = this.x,
+			y = this.y,
+		};
+
+		if (not bDefer) then
+			tData = serialize.table(tData);
+		end
+
+		return tData;
 	end,
 
 	slope = function(this, oOther)

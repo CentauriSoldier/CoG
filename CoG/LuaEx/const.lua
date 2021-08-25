@@ -35,7 +35,7 @@ end
 
 
 --TODO create destroy function
-function tConst.create(sName, sDescription)
+function tConst.create(sName, sDescription, bIsConstType)
 --	local  			= select(1, ...);
 --	local 		= select(2, ...);
 
@@ -60,6 +60,7 @@ function tConst.create(sName, sDescription)
 		tConst.Types[sName] = {
 			ThrowErrors = tConst.ThrowErrorsByDefault,  --set the default error flag for this CONST type
 			ConstNames = {},
+			Description = sDescription,
 		};
 
 		--============================================
@@ -87,11 +88,12 @@ function tConst.create(sName, sDescription)
 
 				--make sure the CONST is of the correct type
 				local sConstType = sName..'.'..vKey;
-				local bIsConstType = sType == sConstType;
+				local bIsConstType = sType == sConstType or bIsConstType;
 
 				if (IsAllowedValueType(sType) or bIsConstType) then
 					tShadow[vKey] = vValue;
-					tShadow.Descriptions[tTable] = sDescription;
+					--tShadow.Descriptions[sName] = sDescription;
+					--tConst.Types[sName].Description = sDescription;
 					--add this CONST name to the list of names for this CONST type
 					tConst.Types[sName].ConstNames[#tConst.Types[sName].ConstNames + 1] = vKey;
 
@@ -149,8 +151,8 @@ function tConst.create(sName, sDescription)
 		-- GetDescription
 		--================
 		function tConstType:getDescription()
-			assert(tShadow.Descriptions[self], "Error getting CONST description. CONST does not exist.");
-			return tShadow.Descriptions[self];
+			assert(tShadow.Descriptions[type(self)], "Error getting CONST description. CONST does not exist.");
+			return tShadow.Descriptions[type(self)];
 		end
 
 
@@ -212,6 +214,7 @@ function tConst.create(sName, sDescription)
 			__index = tShadow, --the shadow reference
 			__newindex = NewIndex,
 			__type = sName,
+			__tostring = function() return tConst.Types[sName].Description end,
 		});
 
 	else
