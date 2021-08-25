@@ -5,7 +5,7 @@
 Huge thanks to Bas Groothedde at Imagine Programming for creating the class module. If you'd like to see more of his code, you can visit his GitHub [here](https://github.com/imagine-programming).
 
 # Work in Progress
-This project is in alpha so some of the code will not yet work. I will delete this message once the progect is in beta and ready for use.
+This project is in alpha so some of the code will not yet work. I will delete this message once the project is in beta and ready for use.
 
 # Required Modules
 While the classes (listed below) are optional to your project, some depend on the scripts listed in this section and, as such, will not function without these being required.
