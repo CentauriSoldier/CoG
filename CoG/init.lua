@@ -1,6 +1,6 @@
 --[[*
-@authors Centauri Soldier, Bas Groothedde
-@copyright Copyright © 2016 Centauri Soldier
+@authors Centauri Soldier
+@copyright Public Domain
 @description
 	<h2>CoG</h2>
 	<h3>Code of Gaming: A collection of code designed to make game creation must easier.</h3>
@@ -89,7 +89,7 @@ For more information, please refer to <http://unlicense.org/>
 </ul>
 @usage
 	<h2>Coming Soon</h2>
-@version 0.3
+@version 0.4
 @versionhistory
 <ul>
 	<li>
@@ -103,23 +103,23 @@ For more information, please refer to <http://unlicense.org/>
 		<b>0.3</b>
 		<br>
 		<p>Created an init module to allow for a single require call to CoG which loads all desired modules</p>
+		<b>0.4</b>
+		<br>
+		<p>Removed the class module (as well other commonly-used Lua libraries) and ported them to a new project. Added CoG's dependency on said project.</p>
 	</li>
 </ul>
 @website https://github.com/CentauriSoldier/CoG
 *]]
-local rLibraries 		= ".libraries.";
-local rStatic 			= ".static.";
-local rGenerators		= ".static.generators.";
-local rClasses 			= ".classes.";
-local rClassesAudio 	= ".classes.audio.";
-local rClassesComponent	= ".classes.component.";
-local rClassesGeometry	= ".classes.geometry.";
-local rClassesShapes	= ".classes.geometry.shapes.";
+local rStatic 			= "static";
+local rGenerators		= "static.generators";
+local rClasses 			= "classes";
+local rClassesAudio 	= "classes.audio";
+local rClassesComponent	= "classes.component";
+local rClassesGeometry	= "classes.geometry";
+local rClassesShapes	= "classes.geometry.shapes";
 
 --warn the user if debug is missing
-if type(debug) ~= "table" then
-	error("CoG requires the debug library during initialization. Please the debug library before initializing CoG.");
-end
+assert(type(debug) == "table", "CoG requires the debug library during initialization. Please enable the debug library before initializing CoG.");
 
 --determine the call location
 local sPath = debug.getinfo(1, "S").source;
@@ -134,40 +134,39 @@ local function import(sFile)
 	return require(sPath..'.'..sFile);
 end
 
---the basic libraries
-class 		= import(rLibraries.."class");
-const 		= import(rLibraries.."const");
+if not(LUAEX_INIT) then
+	import("LuaEx.init");
+	LUAEX_INIT = true;
+end
 
---lua extension libraries
-import(rLibraries.."math");
-import(rLibraries.."table");
-
---other libraries
-serialize 	= import(rLibraries.."serialize");
-deserialize = import(rLibraries.."deserialize");
+--warn the user if LuaEx is missing
+assert(type(LUAEX_INIT) == "boolean" and LUAEX_INIT, "CoG requires the LuaEx library during initialization. Please include and load the LuaEx library before initializing CoG.");
 
 --static entities
-lists 		= import(rStatic.."lists"); --TODO change this a less common name!
-name 		= import(rGenerators.."name"); --TODO change this a less common name!
+lists 		= import(rStatic	..".lists"); --TODO change this a less common name!
+name 		= import(rGenerators..".name"); --TODO change this a less common name!
 
 --classes (geometry)
-point 		= import(rClassesGeometry	.."point");
-line 		= import(rClassesGeometry	.."line");
-shape 		= import(rClassesShapes	.."shape");
-circle 		= import(rClassesShapes	.."circle");
-hex 		= import(rClassesShapes	.."hex");
-rectangle 	= import(rClassesShapes	.."rectangle");
-triangle	= import(rClassesShapes	.."triangle");
+point 		= import(rClassesGeometry	..".point");
+line 		= import(rClassesGeometry	..".line");
+shape 		= import(rClassesShapes		..".shape");
+circle 		= import(rClassesShapes		..".circle");
+hex 		= import(rClassesShapes		..".hex");
+rectangle 	= import(rClassesShapes		..".rectangle");
+triangle	= import(rClassesShapes		..".triangle");
 
 --classes (component)
-pot 		= import(rClassesComponent.."pot");
-protean 	= import(rClassesComponent.."protean");
-stack 		= import(rClassesComponent.."stack");
-queue 		= import(rClassesComponent.."queue");
+pot 		= import(rClassesComponent..".pot");
+protean 	= import(rClassesComponent..".protean");
+stack 		= import(rClassesComponent..".stack");
+queue 		= import(rClassesComponent..".queue");
 
 --classes (other)
 --action 		= import(rClasses.."action");
 --bank 		= import(rClasses.."bank");
 --combator 	= import(rClasses.."combator");
-iota 		= import(rClasses.."iota");
+iota 		= import(rClasses..".iota");
 --targetor	= import(rClasses.."targetor");
+
+--useful if using CoG as a dependency in multiple modules to prevent the need for loading multilple times
+COG_INIT = true;

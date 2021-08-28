@@ -30,6 +30,10 @@ local function recalculateVerticesAndPoly(this)
 
 	end
 
+	--calculate the width and height
+	this.width 	= math.sqrt(3) * this.size;
+	this.height = this.size * 2;
+
 	this.poly = {};
 
 	--recalculate the poly
@@ -60,7 +64,7 @@ class "hex" : extends(shape) {
 	__construct = function(this, pCenter, nSize)
 		this.center = point();
 		this.size 	= type(nSize) == "number" and nSize or 1;
-
+		
 		if (type(pCenter) == "point") then
 			this.center.x = pCenter.x;
 			this.center.y = pCenter.y;
