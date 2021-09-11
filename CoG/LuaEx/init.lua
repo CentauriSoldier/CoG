@@ -74,16 +74,18 @@ local function import(sFile)
 end
 
 --core modules
-const 	= import("const");
-class 	= import("class");
+const 				= import("const");
+class, interface 	= import("class");
+base64				= import("base64");
 
 --lua extension modules
 import("math");
+import("string");
 import("table");
 
 --other modules
-serialize 	= import("serialize");
-deserialize = import("deserialize");
+serialize 			= import("serialize");
+deserialize 		= import("deserialize");
 
 --useful if using CoG as a dependency in multiple modules to prevent the need for loading multilple times
 LUAEX_INIT = true;
