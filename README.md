@@ -1,5 +1,5 @@
 # ![CoG](https://github.com/CentauriSoldier/CoG/blob/main/github_images/logo.png)
-
+# ***README IN PROGRESS. Updated Each Day***
 ## ![What is Cog?](https://github.com/CentauriSoldier/CoG/blob/main/github_images/whatiscog.png)
 A lua framework containing support scripts such as shapes, abstract potentiometers, value modifier classes and more.
 
