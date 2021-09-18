@@ -1,8 +1,11 @@
 ![CoG](https://github.com/CentauriSoldier/CoG/blob/main/logo.png)
 
+![CoG](https://github.com/CentauriSoldier/CoG/blob/main/whatiscog.png)
 A lua framework containing support scripts such as shapes, abstract potentiometers, value modifier classes and more.
 
-## Version
+![CoG](https://github.com/CentauriSoldier/CoG/blob/main/resources.png)
+
+![CoG](https://github.com/CentauriSoldier/CoG/blob/main/version.png)
 
 Changelog
 
@@ -23,6 +26,8 @@ Changelog
 
 **0.1**
 - Compiled various modules into CoG.
+
+
 
 # Work in Progress
 This project is in alpha so some of the code will not yet work. I will delete this message once the project is in beta and ready for use.
