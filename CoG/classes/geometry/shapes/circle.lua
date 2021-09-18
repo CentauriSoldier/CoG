@@ -23,11 +23,6 @@
 </ul>
 @website https://github.com/CentauriSoldier
 *]]
-assert(type(class) == "function", "Error loading the circle class. It depends on class.");
-assert(type(shape) == "class", "Error loading the circle class. It depends on the shape class.");
-assert(type(point) == "class", "Error loading the circle class. It depends on the point class.");
-assert(type(serialize) 		== "table", 	"Error loading the circle class. It depends on serialize.");
-assert(type(deserialize)	== "table", 	"Error loading the circle class. It depends on deserialize.");
 
 --localization
 local class 		= class;

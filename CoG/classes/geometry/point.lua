@@ -23,9 +23,6 @@
 </ul>
 @website https://github.com/CentauriSoldier
 *]]
-assert(type(const) == "function", "const has not been loaded.");
-assert(type(serialize) 		== "table", 	"Error loading the point class. It depends on serialize.");
-assert(type(deserialize)	== "table", 	"Error loading the point class. It depends on deserialize.");
 
 --localization
 local class 		= class;

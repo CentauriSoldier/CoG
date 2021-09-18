@@ -18,13 +18,12 @@
 </ul>
 @website https://github.com/CentauriSoldier
 *]]
---localization
-assert(type(class) == "function", "Error loading the shape class. It depends on class.");
+
 
 --localization
 local class	= class;
 
-class "shape" {
+local shape = class "shape" {
 
 };
 

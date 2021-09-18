@@ -1,10 +1,5 @@
 --credits https://www.redblobgames.com/grids/hexagons/
 --TODO create flat hex and pionty hex subclasses
-assert(type(class) == "function", "Error loading the hex class. It depends on class.");
-assert(type(shape) == "class", "Error loading the hex class. It depends on the shape class.");
-assert(type(point) == "class", "Error loading the hex class. It depends on the point class.");
-assert(type(serialize) 		== "table", 	"Error loading the hex class. It depends on serialize.");
-assert(type(deserialize)	== "table", 	"Error loading the hex class. It depends on deserialize.");
 
 --localization
 local assert 		= assert;
@@ -64,7 +59,7 @@ class "hex" : extends(shape) {
 	__construct = function(this, pCenter, nSize)
 		this.center = point();
 		this.size 	= type(nSize) == "number" and nSize or 1;
-		
+
 		if (type(pCenter) == "point") then
 			this.center.x = pCenter.x;
 			this.center.y = pCenter.y;
