@@ -5,6 +5,6 @@ require("init");
 local t = iota();
 
 
-t:setHours(13)
+--t:setHours(13)
 --print(t:getHours());
-print(tostring(t))
+--print(tostring(t))
