@@ -8,7 +8,7 @@ A lua framework containing support scripts such as shapes, abstract potentiomete
 - Logo: https://cooltext.com/
 - Special ASCII Fonts: https://fsymbols.com/generators/carty/
 
-# ![Version](https://github.com/CentauriSoldier/CoG/blob/main/version.png)
+## ![Version](https://github.com/CentauriSoldier/CoG/blob/main/version.png)
 
 #### Alpha 0.5
 
