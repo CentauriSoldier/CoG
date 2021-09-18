@@ -1,6 +1,5 @@
 ![CoG](https://github.com/CentauriSoldier/CoG/blob/main/logo.png)
 
-# 🄲🄾🄳🄴 🄾🄵 🄶🄰🄼🄸🄽🄶
 A lua framework containing support scripts such as shapes, abstract potentiometers, value modifier classes and more.
 
 ## Version
