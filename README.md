@@ -1,4 +1,4 @@
-![CoG](https://raw.githubusercontent.com/CentauriSoldier/CoG/main/logo.png)
+![CoG](https://github.com/CentauriSoldier/CoG/blob/main/logo.gif)
 
  Code of Gaming - A lua framework containing support scripts such as shapes, abstract potentiometers, value modifier classes and more.
 
