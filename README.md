@@ -13,7 +13,8 @@ A lua framework containing support scripts such as shapes, abstract potentiomete
 
 <details>
 <summary>See Changes</summary>
-### Changelog
+
+### 🇨​​​​​🇭​​​​​🇦​​​​​🇳​​​​​🇬​​​​​🇪​​​​​🇱​​​​​🇴​​​​​🇬​​​​​
 
 **0.5**
 - Change: updated all modules and classes to use the new LuaEx system.
