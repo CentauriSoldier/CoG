@@ -1,13 +1,14 @@
 ![CoG](https://github.com/CentauriSoldier/CoG/blob/main/logo.png)
 ----
-![CoG](https://github.com/CentauriSoldier/CoG/blob/main/whatiscog.png)
+![What is Cog?](https://github.com/CentauriSoldier/CoG/blob/main/whatiscog.png)
 
 A lua framework containing support scripts such as shapes, abstract potentiometers, value modifier classes and more.
 
-![CoG](https://github.com/CentauriSoldier/CoG/blob/main/resources.png)
+![Resources](https://github.com/CentauriSoldier/CoG/blob/main/resources.png)
 - Logo: https://cooltext.com/
 - Special ASCII Fonts: https://fsymbols.com/generators/carty/
-![CoG](https://github.com/CentauriSoldier/CoG/blob/main/version.png)
+
+![Version](https://github.com/CentauriSoldier/CoG/blob/main/version.png)
 
 Changelog
 
@@ -29,21 +30,17 @@ Changelog
 **0.1**
 - Compiled various modules into CoG.
 
+![License](https://github.com/CentauriSoldier/CoG/blob/main/license.png)
 
 
-# Work in Progress
-This project is in alpha so some of the code will not yet work. I will delete this message once the project is in beta and ready for use.
+![Warranty](https://github.com/CentauriSoldier/CoG/blob/main/warranty.png)
 
-# Required Modules
-While the classes (listed below) are optional to your project, some depend on the scripts listed in this section and, as such, will not function without these being required.
-
-## Require Order
-* class
-* const
-* math
+![Dependencies](https://github.com/CentauriSoldier/CoG/blob/main/dependencies.png)
 
 
-# The Classes (optional)
+![Getting Started](https://github.com/CentauriSoldier/CoG/blob/main/gettingstarted.png)
+
+![Classes](https://github.com/CentauriSoldier/CoG/blob/main/classes.png)
 
 ## iota
 This class is, in effect, a clock/calendar system. It requires the client to update it at the desired intervals but handles all the math and logic of the clock system whenever a change is made to any of the types (seconds, minutes, hours, etc.).
@@ -59,3 +56,7 @@ This is a very simple point class that has no private fields or methods.
 * y *A numeric value representing the y value of the point.*
 
 #### Methods
+
+![Modules](https://github.com/CentauriSoldier/CoG/blob/main/modules.png)
+
+![Credits](https://github.com/CentauriSoldier/CoG/blob/main/credits.png)
