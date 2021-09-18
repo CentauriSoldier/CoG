@@ -1,8 +1,28 @@
-# CoG
- Code of Gaming - A lua framework containing support scripts such as oop class creation, shapes, abstract potentiometers, value modifier classes and more.
+![CoG](https://raw.githubusercontent.com/CentauriSoldier/CoG/main/logo.png)
 
-# Credits
-Huge thanks to Bas Groothedde at Imagine Programming for creating the class module. If you'd like to see more of his code, you can visit his GitHub [here](https://github.com/imagine-programming).
+ Code of Gaming - A lua framework containing support scripts such as shapes, abstract potentiometers, value modifier classes and more.
+
+## Version
+
+Changelog
+
+**0.5**
+- Change: updated all modules and classes to use the new LuaEx system.
+- Change: removed queue class.
+- Change: removed stack class.
+
+**0.4**
+- Removed the class module (as well other commonly-used Lua libraries) and ported them to a new project. Added CoG's dependency on said project.
+
+**0.3**
+- Created an init module to allow for a single require call to CoG which loads all desired modules.
+
+**0.2**
+- Added the class module (create by Bas Groothedde).
+- Added several classes.</p>
+
+**0.1**
+- Compiled various modules into CoG.
 
 # Work in Progress
 This project is in alpha so some of the code will not yet work. I will delete this message once the project is in beta and ready for use.

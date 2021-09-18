@@ -31,11 +31,49 @@
 local iota;
 local sIota = 'iota';
 
+
+--set the constants for this class
+--[[IOTA 						= const("IOTA");
+IOTA.YEARS					= "years";
+IOTA.DAYS 					= "days";
+IOTA.HOURS 					= "hours";
+IOTA.MINUTES 				= "minutes";
+IOTA.SECONDS 				= "seconds";
+IOTA.MAX					= const("IOTA.MAX", 'Max numbers for iota values.', true);
+IOTA.MAX.YEARS				= 999999; --if you make this value larger, be sure to reduce the precache years max
+IOTA.MAX.DAYS 				= 365;
+IOTA.MAX.HOURS 				= 24;
+IOTA.MAX.MINUTES 			= 60;
+IOTA.MAX.SECONDS			= 60;
+IOTA.CALLBACK				= const('IOTA.CALLBACK', 'Call back functions for when values change.', true);
+IOTA.CALLBACK.ON_SECOND		= 'onSecond';
+IOTA.CALLBACK.ON_MINUTE		= 'onMinute';
+IOTA.CALLBACK.ON_HOUR		= 'onHour';
+IOTA.CALLBACK.ON_DAY		= 'onDay';
+IOTA.CALLBACK.ON_YEAR		= 'onYear';
+]]
+
+IOTA 						= {
+	YEARS					= "years",
+	DAYS 					= "days",
+	HOURS 					= "hours",
+	MINUTES 				= "minutes",
+	SECONDS 				= "seconds",
+	--if you make the year value larger, be sure to reduce the precache years max
+	MAX					= enum("IOTA.MAX", {"YEARS", "DAYS", "HOURS", "MINUTES", "SECONDS"}, {999999, 365, 24, 60, 60}, true);
+	CALLBACK			= enum("IOTA.CALLBACK", {"ON_SECOND", "ON_MINUTE", "ON_HOUR", "ON_DAY", "ON_YEAR"}, {"onMinute", "onSecond", "onHour", "onDay", "onYear"}, true);
+};
+
+--table.settype(IOTA, "IOTA");
+--table.settype(IOTA.MAX, "IOTA.MAX");
+--table.settype(IOTA.CALLBACK, "IOTA.CALLBACK");
+--table.lock(IOTA);
+
 local tIota = {};
 local tIotas = {};
 
 --localization
---local IOTA 		= IOTA;
+local IOTA 		= IOTA;
 local math 		= math;
 local unpack 	= unpack;
 local type 		= type;
@@ -63,15 +101,41 @@ local sHourPrefix 	= " Hour: ";
 local sMinutePrefix = " Minute: ";
 local sSecondPrefix = " Second: ";
 
---=====================================================<
 --DO NOT CHANGE THESE VALUES
-local tStringPreCache = {};
 local PRECACHE_YEARS 	= 1;
 local PRECACHE_DAYS 	= 2;
 local PRECACHE_HOURS 	= 3;
 local PRECACHE_MINUTES 	= 4;
 local PRECACHE_SECONDS 	= 5;
 
+local tStringPreCache = {
+	[PRECACHE_YEARS] 	= {max = IOTA.MAX.YEARS.value, 		func = function(nValue) return sYearPrefix	..tostring(nValue) 				end},
+	[PRECACHE_DAYS] 	= {max = IOTA.MAX.DAYS.value, 		func = function(nValue) return sDayPrefix	..string.format("%03d", nValue) end},
+	[PRECACHE_HOURS] 	= {max = IOTA.MAX.HOURS.value, 		func = function(nValue) return sHourPrefix	..string.format("%02d", nValue) end},
+	[PRECACHE_MINUTES] 	= {max = IOTA.MAX.MINUTES.value, 	func = function(nValue) return sMinutePrefix..string.format("%02d", nValue) end},
+	[PRECACHE_SECONDS] 	= {max = IOTA.MAX.SECONDS.value, 	func = function(nValue) return sSecondPrefix..string.format("%02d", nValue) end},
+};
+
+--[[
+"Year: "..oIota[IOTA.YEARS]..' '..
+	  string.format(" Day: %03d Hour: %02d", oIota[IOTA.DAYS], oIota[IOTA.HOURS]);
+]]
+
+for nType = 1, #tStringPreCache do
+	--store the max value and function
+	local nMax = tStringPreCache[nType].max;
+	local func = tStringPreCache[nType].func;
+
+	--now, set the value to be a table
+	tStringPreCache[nType] = {};
+
+	--store the strings in the table
+	for x = 0, nMax do
+		tStringPreCache[nType][x] = func(x);
+	end
+
+end
+--=====================================================<
 
 
 
@@ -90,57 +154,57 @@ end
 --TODO add onSecond callback method
 local function levelValues(this)
 	local oIota			= tIotas[this];
-	local nMax 			= iota.MAX.SECONDS;
+	local nMax 			= IOTA.MAX.SECONDS;
 	local nPreValue 	= 0;
 	local nPostValue	= 0;
 
-	if (oIota[iota.INTERVAL.SECONDS] >= nMax) then
-		nPreValue = oIota[iota.INTERVAL.MINUTES];
-		oIota[iota.INTERVAL.MINUTES]  = oIota[iota.INTERVAL.MINUTES] + math.floor(oIota[iota.INTERVAL.SECONDS] / nMax);
-		oIota[iota.INTERVAL.SECONDS]  = oIota[iota.INTERVAL.SECONDS] % nMax;
-		nPostValue = oIota[iota.INTERVAL.MINUTES] - nPreValue;
+	if (oIota[IOTA.SECONDS] >= nMax) then
+		nPreValue = oIota[IOTA.MINUTES];
+		oIota[IOTA.MINUTES]  = oIota[IOTA.MINUTES] + math.floor(oIota[IOTA.SECONDS] / nMax);
+		oIota[IOTA.SECONDS]  = oIota[IOTA.SECONDS] % nMax;
+		nPostValue = oIota[IOTA.MINUTES] - nPreValue;
 
-		if (type(oIota.callbacks[iota.CALLBACK.ON_MINUTE]) == 'function') then
-			oIota.callbacks[iota.CALLBACK.ON_MINUTE](this, nPostValue, unpack(oIota.callbackArgs[iota.CALLBACK.ON_MINUTE]));
+		if (type(oIota.callbacks[IOTA.CALLBACK.ON_MINUTE]) == 'function') then
+			oIota.callbacks[IOTA.CALLBACK.ON_MINUTE](this, nPostValue, unpack(oIota.callbackArgs[IOTA.CALLBACK.ON_MINUTE]));
 		end
 
 	end
 
-	nMax = iota.MAX.MINUTES;
-	if (oIota[iota.INTERVAL.MINUTES] >= nMax) then
-		nPreValue = oIota[iota.INTERVAL.HOURS];
-		oIota[iota.INTERVAL.HOURS] 	 = oIota[iota.INTERVAL.HOURS] + math.floor(oIota[iota.INTERVAL.MINUTES] / nMax);
-		oIota[iota.INTERVAL.MINUTES]  = oIota[iota.INTERVAL.MINUTES] % nMax;
-		nPostValue = oIota[iota.INTERVAL.HOURS] - nPreValue;
+	nMax = IOTA.MAX.MINUTES;
+	if (oIota[IOTA.MINUTES] >= nMax) then
+		nPreValue = oIota[IOTA.HOURS];
+		oIota[IOTA.HOURS] 	 = oIota[IOTA.HOURS] + math.floor(oIota[IOTA.MINUTES] / nMax);
+		oIota[IOTA.MINUTES]  = oIota[IOTA.MINUTES] % nMax;
+		nPostValue = oIota[IOTA.HOURS] - nPreValue;
 
-		if (type(oIota.callbacks[iota.CALLBACK.ON_HOUR]) == 'function') then
-			oIota.callbacks[iota.CALLBACK.ON_HOUR](this, nPostValue, unpack(oIota.callbackArgs[iota.CALLBACK.ON_HOUR]));
+		if (type(oIota.callbacks[IOTA.CALLBACK.ON_HOUR]) == 'function') then
+			oIota.callbacks[IOTA.CALLBACK.ON_HOUR](this, nPostValue, unpack(oIota.callbackArgs[IOTA.CALLBACK.ON_HOUR]));
 		end
 
 	end
 
-	nMax = iota.MAX.HOURS;
-	if (oIota[iota.INTERVAL.HOURS] >= nMax) then
-		nPreValue = oIota[iota.INTERVAL.DAYS];
-		oIota[iota.INTERVAL.DAYS]   = oIota[iota.INTERVAL.DAYS] + math.floor(oIota[iota.INTERVAL.HOURS] / nMax);
-		oIota[iota.INTERVAL.HOURS]  = oIota[iota.INTERVAL.HOURS] % nMax;
-		nPostValue = oIota[iota.INTERVAL.DAYS] - nPreValue;
+	nMax = IOTA.MAX.HOURS;
+	if (oIota[IOTA.HOURS] >= nMax) then
+		nPreValue = oIota[IOTA.DAYS];
+		oIota[IOTA.DAYS]   = oIota[IOTA.DAYS] + math.floor(oIota[IOTA.HOURS] / nMax);
+		oIota[IOTA.HOURS]  = oIota[IOTA.HOURS] % nMax;
+		nPostValue = oIota[IOTA.DAYS] - nPreValue;
 
-		if (type(oIota.callbacks[iota.CALLBACK.ON_DAY]) == 'function') then
-			oIota.callbacks[iota.CALLBACK.ON_DAY](this, nPostValue, unpack(oIota.callbackArgs[iota.CALLBACK.ON_DAY]));
+		if (type(oIota.callbacks[IOTA.CALLBACK.ON_DAY]) == 'function') then
+			oIota.callbacks[IOTA.CALLBACK.ON_DAY](this, nPostValue, unpack(oIota.callbackArgs[IOTA.CALLBACK.ON_DAY]));
 		end
 
 	end
 
-	nMax = iota.MAX.DAYS;
-	if (oIota[iota.INTERVAL.DAYS] >= nMax) then
-		nPreValue = oIota[iota.INTERVAL.YEARS];
-		oIota[iota.INTERVAL.YEARS] = oIota[iota.INTERVAL.YEARS] + math.floor(oIota[iota.INTERVAL.DAYS] / nMax);
-		oIota[iota.INTERVAL.DAYS]  = oIota[iota.INTERVAL.DAYS] % nMax
-		nPostValue = oIota[iota.INTERVAL.YEARS] - nPreValue;
+	nMax = IOTA.MAX.DAYS;
+	if (oIota[IOTA.DAYS] >= nMax) then
+		nPreValue = oIota[IOTA.YEARS];
+		oIota[IOTA.YEARS] = oIota[IOTA.YEARS] + math.floor(oIota[IOTA.DAYS] / nMax);
+		oIota[IOTA.DAYS]  = oIota[IOTA.DAYS] % nMax
+		nPostValue = oIota[IOTA.YEARS] - nPreValue;
 
-		if (type(oIota.callbacks[iota.CALLBACK.ON_YEAR]) == 'function') then
-			oIota.callbacks[iota.CALLBACK.ON_YEAR](this, nPostValue, unpack(oIota.callbackArgs[iota.CALLBACK.ON_YEAR]));
+		if (type(oIota.callbacks[IOTA.CALLBACK.ON_YEAR]) == 'function') then
+			oIota.callbacks[IOTA.CALLBACK.ON_YEAR](this, nPostValue, unpack(oIota.callbackArgs[IOTA.CALLBACK.ON_YEAR]));
 		end
 
 	end
@@ -170,21 +234,25 @@ iota = class "iota" {
 			ShowHours 		= true,
 			ShowMinutes		= true,
 			ShowSeconds 	= true,
-
+			[IOTA.YEARS]	= 0,
+			[IOTA.DAYS]		= 0,
+			[IOTA.HOURS]	= 0,
+			[IOTA.MINUTES]	= 0,
+			[IOTA.SECONDS]	= 0,
 			--marker = {}, --used for tracking how much time has passed from one point to the next
 		};
 		local oIota = tIotas[this];
 
 		--setup values
-		for _, eItem in iota.INTERVAL() do
-			oIota[tostring(eItem)] 		= 0;
+		--for sIndex, _ in pairs(IOTA) do
+			--oIota[sIndex] 			= 0;
 			--oIota.marker[sName] 	= 0;
-		end
+		--end
 
 		--setup callbacks
-		for _, eItem in iota.CALLBACK() do
-			oIota.callbacks[eItem.value] 		= 0;
-			oIota.callbackArgs[eItem.value]		= {};
+		for _, eItem in IOTA.CALLBACK() do
+			oIota.callbacks[eItem.value]	= 0;
+			oIota.callbackArgs[eItem.value]	= {};
 		end
 
 	end,
@@ -198,11 +266,11 @@ iota = class "iota" {
 		local nAddDays 		= 0;
 		local nAddYears 	= 0;
 
-		oRet[iota.INTERVAL.SECONDS] 	= oMe[iota.INTERVAL.SECONDS] 	+ oIota[iota.INTERVAL.SECONDS];
-		oRet[iota.INTERVAL.MINUTES] 	= oMe[iota.INTERVAL.MINUTES] 	+ oIota[iota.INTERVAL.MINUTES];
-		oRet[iota.INTERVAL.HOURS] 		= oMe[iota.INTERVAL.HOURS] 		+ oIota[iota.INTERVAL.HOURS];
-		oRet[iota.INTERVAL.DAYS] 		= oMe[iota.INTERVAL.DAYS] 		+ oIota[iota.INTERVAL.DAYS];
-		oRet[iota.INTERVAL.YEARS] 		= oMe[iota.INTERVAL.YEARS] 		+ oIota[iota.INTERVAL.YEARS];
+		oRet[IOTA.SECONDS] 	= oMe[IOTA.SECONDS] 	+ oIota[IOTA.SECONDS];
+		oRet[IOTA.MINUTES] 	= oMe[IOTA.MINUTES] 	+ oIota[IOTA.MINUTES];
+		oRet[IOTA.HOURS] 	= oMe[IOTA.HOURS] 		+ oIota[IOTA.HOURS];
+		oRet[IOTA.DAYS] 	= oMe[IOTA.DAYS] 		+ oIota[IOTA.DAYS];
+		oRet[IOTA.YEARS] 	= oMe[IOTA.YEARS] 		+ oIota[IOTA.YEARS];
 
 		return levelValues(this);
 
@@ -214,11 +282,11 @@ iota = class "iota" {
 
 		--TODO for some reason, hours and minutes are missing a space...find out why
 		--TODO create contingent for non-existent year strings
-		sYears 		= oIota.ShowYears 	and tCache[PRECACHE_YEARS][oIota[iota.INTERVAL.YEARS]] 			or sBlank;
-		sDays 		= oIota.ShowDays 	and tCache[PRECACHE_DAYS][oIota[iota.INTERVAL.DAYS]] 			or sBlank;
-		sHours 		= oIota.ShowHours 	and tCache[PRECACHE_HOURS][oIota[iota.INTERVAL.HOURS]] 			or sBlank;
-		sMinutes 	= oIota.ShowMinutes and tCache[PRECACHE_MINUTES][oIota[iota.INTERVAL.MINUTES]] 		or sBlank;
-		sSeconds 	= oIota.ShowSeconds and tCache[PRECACHE_SECONDS][oIota[iota.INTERVAL.SECONDS]] 		or sBlank;
+		sYears 		= oIota.ShowYears 	and tCache[PRECACHE_YEARS][oIota[IOTA.YEARS]] 			or sBlank;
+		sDays 		= oIota.ShowDays 	and tCache[PRECACHE_DAYS][oIota[IOTA.DAYS]] 			or sBlank;
+		sHours 		= oIota.ShowHours 	and tCache[PRECACHE_HOURS][oIota[IOTA.HOURS]] 			or sBlank;
+		sMinutes 	= oIota.ShowMinutes and tCache[PRECACHE_MINUTES][oIota[IOTA.MINUTES]] 		or sBlank;
+		sSeconds 	= oIota.ShowSeconds and tCache[PRECACHE_SECONDS][oIota[IOTA.SECONDS]] 		or sBlank;
 
 		return sYears..sDays..sHours..sMinutes..sSeconds;
 		--return "Year: "..oIota[IOTA.YEARS]..' '..
@@ -260,11 +328,11 @@ iota = class "iota" {
 		local oIota = tIotas[this];
 		local tData = deserialize(sData);
 
-			oIota[iota.INTERVAL.SECONDS]	= tData[iota.INTERVAL.SECONDS];
-			oIota[iota.INTERVAL.MINUTES]	= tData[iota.INTERVAL.MINUTES];
-			oIota[iota.INTERVAL.HOURS]		= tData[iota.INTERVAL.HOURS];
-			oIota[iota.INTERVAL.DAYS]		= tData[iota.INTERVAL.DAYS];
-			oIota[iota.INTERVAL.YEARS]		= tData[iota.INTERVAL.YEARS];
+			oIota[IOTA.SECONDS]	= tData[IOTA.SECONDS];
+			oIota[IOTA.MINUTES]	= tData[IOTA.MINUTES];
+			oIota[IOTA.HOURS]	= tData[IOTA.HOURS];
+			oIota[IOTA.DAYS]	= tData[IOTA.DAYS];
+			oIota[IOTA.YEARS]	= tData[IOTA.YEARS];
 
 		return this;
 	end,
@@ -290,23 +358,23 @@ iota = class "iota" {
 
 
 	getSeconds = function(this)
-		return tIotas[this][iota.INTERVAL.SECONDS];
+		return tIotas[this][IOTA.SECONDS];
 	end,
 
 	getMinutes = function(this)
-		return tIotas[this][iota.INTERVAL.MINUTES];
+		return tIotas[this][IOTA.MINUTES];
 	end,
 
 	getHours = function(this)
-		return tIotas[this][iota.INTERVAL.HOURS];
+		return tIotas[this][IOTA.HOURS];
 	end,
 
 	getDays = function(this)
-		return tIotas[this][iota.INTERVAL.DAYS];
+		return tIotas[this][IOTA.DAYS];
 	end,
 
 	getYears = function(this)
-		return tIotas[this][iota.INTERVAL.YEARS];
+		return tIotas[this][IOTA.YEARS];
 	end,
 
 	getValue = function(this, sValueItem)
@@ -343,11 +411,11 @@ iota = class "iota" {
 		local oIota = tIotas[this];
 
 		local tData = {
-			[iota.INTERVAL.SECONDS]	= oIota[iota.INTERVAL.SECONDS],
-			[iota.INTERVAL.MINUTES]	= oIota[iota.INTERVAL.MINUTES],
-			[iota.INTERVAL.HOURS]	= oIota[iota.INTERVAL.HOURS],
-			[iota.INTERVAL.DAYS]	= oIota[iota.INTERVAL.DAYS],
-			[iota.INTERVAL.YEARS]	= oIota[iota.INTERVAL.YEARS],
+			[IOTA.SECONDS]	= oIota[IOTA.SECONDS],
+			[IOTA.MINUTES]	= oIota[IOTA.MINUTES],
+			[IOTA.HOURS]	= oIota[IOTA.HOURS],
+			[IOTA.DAYS]		= oIota[IOTA.DAYS],
+			[IOTA.YEARS]	= oIota[IOTA.YEARS],
 		};
 
 		return serialize.table(tData);
@@ -355,13 +423,18 @@ iota = class "iota" {
 
 	--todo fix this, it should use levelValues
 	set = function(this, nYears, nDays, nHours, nMinutes, nSeconds)
-		local oIota 	= tIotas[this];
+		local oIota 		= tIotas[this];
+		local nMaxYears 	= IOTA.MAX.YEARS.value;
+		local nMaxDays 		= IOTA.MAX.DAYS.value;
+		local nMaxHours 	= IOTA.HOURS.MAX.value;
+		local nMaxMinutes 	= IOTA.MAX.MINUTES.value;
+		local nMaxSeconds 	= IOTA.MAX.SECONDS.value;
 
-		oIota[iota.INTERVAL.YEARS] 		= T((nYears 	>= 0), 	nYears, 																							0);
-		oIota[iota.INTERVAL.DAYS] 		= T((nDays 		>= 0), 	T((nDays 	< oIota.Max[iota.INTERVAL.DAYS]), 		nDays, 		oIota.Max[iota.INTERVAL.DAYS]), 	0);
-		oIota[iota.INTERVAL.HOURS] 		= T((nHours 	>= 0), 	T((nHours 	< oIota.Max[iota.INTERVAL.HOURS]), 		nHours, 	oIota.Max[iota.INTERVAL.HOURS]), 	0);
-		oIota[iota.INTERVAL.MINUTES]	= T((nMinutes	>= 0), 	T((nMinutes < oIota.Max[iota.INTERVAL.MINUTES]), 	nMinutes, 	oIota.Max[iota.INTERVAL.MINUTES]), 	0);
-		oIota[iota.INTERVAL.SECONDS] 	= T((nSeconds 	>= 0), 	T((nSeconds < oIota[iota.INTERVAL.SECONDS]), 		nSeconds, 	oIota[iota.INTERVAL.SECONDS]), 		0);
+		oIota[IOTA.YEARS] 	= nYears 	>= 0 and (nYears 	<= 	nMaxYears	and nYears 		or nMaxYears) 	or 0;
+		oIota[IOTA.DAYS] 	= nDays		>= 0 and (nDays  	< 	nMaxDays 	and nDays 		or nMaxDays) 	or 0;
+		oIota[IOTA.HOURS] 	= nHours 	>= 0 and (nHours 	< 	nMaxHours 	and nHours		or nMaxHours) 	or 0;
+		oIota[IOTA.MINUTES]	= nMinutes	>= 0 and (nMinutes 	< 	nMaxMinutes	and nMinutes 	or nMaxMinutes)	or 0;
+		oIota[IOTA.SECONDS] = nSeconds 	>= 0 and (nSeconds 	< 	nMaxSeconds	and nSeconds	or nMaxSeconds)	or 0;
 
 		return this;
 	end,
@@ -387,44 +460,45 @@ iota = class "iota" {
 
 
 	setDays = function(this, nDays)
-		local oIota 	= tIotas[this];
-		local nMax 		= oIota.Max[iota.INTERVAL.DAYS];
+		local oIota = tIotas[this];
+		local nMax 	= IOTA.MAX.DAYS.value;
 
-		oIota[iota.INTERVAL.DAYS] = T((nDays >= 0), T((nDays < nMax), nDays, nMax), 0);
+		oIota[IOTA.DAYS] = nDays >= 0 and (nDays < nMax and nDays or nMax) or 0;
 		return this;
 	end,
 
 
 	setHours = function(this, nHours)
-		local oIota 	= tIotas[this];
-		local nMax = oIota.Max[iota.INTERVAL.HOURS];
+		local oIota = tIotas[this];
+		local nMax 	= IOTA.MAX.HOURS.value;
 
-		oIota[iota.INTERVAL.HOURS] = T((nHours >= 0), T((nHours < nMax), nHours, nMax), 0);
+		oIota[IOTA.HOURS] = nHours >= 0 and (nHours < nMax and nHours or nMax) or 0;
 		return this;
 	end,
 
 
 	setMinutes = function(this, nMinutes)
-		local oIota 	= tIotas[this];
-		local nMax = oIota.Max[iota.INTERVAL.MINUTES];
+		local oIota = tIotas[this];
+		local nMax 	= IOTA.MAX.MINUTES.value;
 
-		oIota[iota.INTERVAL.MINUTES] = T((nMinutes >= 0), T((nMinutes < nMax), nMinutes, nMax), 0);
+		oIota[IOTA.MINUTES] = nMinutes >= 0 and (nMinutes < nMax and nMinutes or nMax) or 0;
 		return this;
 	end,
 
 
 	setSeconds = function(this, nSeconds)
-		local oIota 	= tIotas[this];
-		local nMax = oIota.Max[iota.INTERVAL.SECONDS];
+		local oIota = tIotas[this];
+		local nMax 	= IOTA.MAX.SECONDS.value;
 
-		oIota[iota.INTERVAL.SECONDS] = T((nSeconds >= 0), T((nSeconds < nMax), nSeconds, nMax), 0);
+		oIota[IOTA.SECONDS] = nSeconds >= 0 and (nSeconds < nMax and nSeconds or nMax) or 0;
 		return this;
 	end,
 
 	setYears = function(this, nYears)
-		local oIota 	= tIotas[this];
+		local oIota = tIotas[this];
+		local nMax 	= IOTA.MAX.YEARS.value;
 
-		oIota[iota.INTERVAL.YEARS] = T((nYears >= 0), nYears, 0);
+		oIota[IOTA.YEARS] = nYears >= 0 and (nYears < nMax and nYears or nMax) or 0;
 		return this;
 	end,
 
@@ -433,19 +507,19 @@ iota = class "iota" {
 
 		if (oIota[sValueItem]) then
 
-			if (sValueItem == iota.INTERVAL.SECONDS) then
+			if (sValueItem == IOTA.SECONDS) then
 				oIota:setSeconds(nValue);
 
-			elseif (sValueItem == iota.INTERVAL.MINUTES) then
+			elseif (sValueItem == IOTA.MINUTES) then
 				oIota:setMinutes(nValue);
 
-			elseif (sValueItem == iota.INTERVAL.HOURS) then
+			elseif (sValueItem == IOTA.HOURS) then
 				oIota:setHours(nValue);
 
-			elseif (sValueItem == iota.INTERVAL.DAYS) then
+			elseif (sValueItem == IOTA.DAYS) then
 				oIota:setDays(nValue);
 
-			elseif (sValueItem == iota.INTERVAL.YEARS) then
+			elseif (sValueItem == IOTA.YEARS) then
 				oIota:setYears(nValue);
 			end
 
@@ -480,38 +554,5 @@ iota = class "iota" {
 	end,
 
 };
-
-iota.INTERVAL 	= enum("iota.INTERVAL", {"YEARS", "DAYS", "HOURS", "MINUTES", "SECONDS"}, nil, true);
-iota.MAX 		= enum("iota.MAX", {"YEARS", "DAYS", "HOURS", "MINUTES", "SECONDS"}, {999999, 365, 24, 60, 60}, true);
-iota.CALLBACK	= enum("iota.CALLBACK", {"ON_SECOND", "ON_MINUTE", "ON_HOUR", "ON_DAY", "ON_YEAR"}, {"onSecond", "onMinute", "onHour", "onDay", "onYear"}, true);
-
-tStringPreCache = {
-	[PRECACHE_YEARS] 	= {max = iota.MAX.YEARS.value, 		func = function(nValue) return sYearPrefix	..tostring(nValue); 				end},
-	[PRECACHE_DAYS] 	= {max = iota.MAX.DAYS.value, 		func = function(nValue) return sDayPrefix	..string.format("%03d", nValue); 	end},
-	[PRECACHE_HOURS] 	= {max = iota.MAX.HOURS.value, 		func = function(nValue) return sHourPrefix	..string.format("%02d", nValue); 	end},
-	[PRECACHE_MINUTES] 	= {max = iota.MAX.MINUTES.value, 	func = function(nValue) return sMinutePrefix..string.format("%02d", nValue); 	end},
-	[PRECACHE_SECONDS] 	= {max = iota.MAX.SECONDS.value, 	func = function(nValue) return sSecondPrefix..string.format("%02d", nValue); 	end},
-};
-
-
-for nType = 1, #tStringPreCache do
-	--store the max value and function
-	local nMax = tStringPreCache[nType].max;
-	local func = tStringPreCache[nType].func;
-
-	--now, set the value to be a table
-	tStringPreCache[nType] = {};
-
-	--store the strings in the table
-	for x = 0, nMax do
-		tStringPreCache[nType][x] = func(x);
-	end
-
-end
-
---[[
-"Year: "..oIota[IOTA.YEARS]..' '..
-	  string.format(" Day: %03d Hour: %02d", oIota[IOTA.DAYS], oIota[IOTA.HOURS]);
-]]
 
 return iota;
