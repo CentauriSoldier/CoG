@@ -1,10 +1,12 @@
 ![CoG](https://github.com/CentauriSoldier/CoG/blob/main/logo.png)
-
+----
 ![CoG](https://github.com/CentauriSoldier/CoG/blob/main/whatiscog.png)
+
 A lua framework containing support scripts such as shapes, abstract potentiometers, value modifier classes and more.
 
 ![CoG](https://github.com/CentauriSoldier/CoG/blob/main/resources.png)
-
+- Logo: https://cooltext.com/
+- Special ASCII Fonts: https://fsymbols.com/generators/carty/
 ![CoG](https://github.com/CentauriSoldier/CoG/blob/main/version.png)
 
 Changelog
