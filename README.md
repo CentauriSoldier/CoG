@@ -8,8 +8,12 @@ A lua framework containing support scripts such as shapes, abstract potentiomete
 - Logo: https://cooltext.com/
 - Special ASCII Fonts: https://fsymbols.com/generators/carty/
 
-![Version](https://github.com/CentauriSoldier/CoG/blob/main/version.png)
+# ![Version](https://github.com/CentauriSoldier/CoG/blob/main/version.png)
 
+#### Alpha 0.5
+
+<details>
+<summary>See Changes</summary>
 Changelog
 
 **0.5**
@@ -30,10 +34,15 @@ Changelog
 **0.1**
 - Compiled various modules into CoG.
 
+</details>
+
 ![License](https://github.com/CentauriSoldier/CoG/blob/main/license.png)
 
+All code is placed in the public domain under [The Unlicense](https://opensource.org/licenses/unlicense "The Unlicense") *(except where otherwise noted)*.
 
 ![Warranty](https://github.com/CentauriSoldier/CoG/blob/main/warranty.png)
+
+None. Use at your own risk.
 
 ![Dependencies](https://github.com/CentauriSoldier/CoG/blob/main/dependencies.png)
 
