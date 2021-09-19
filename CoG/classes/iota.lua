@@ -60,7 +60,7 @@ IOTA 						= {
 	MINUTES 				= "minutes",
 	SECONDS 				= "seconds",
 	--if you make the year value larger, be sure to reduce the precache years max
-	MAX					= enum("IOTA.MAX", {"YEARS", "DAYS", "HOURS", "MINUTES", "SECONDS"}, {999999, 365, 24, 60, 60}, true);
+	MAX					= enum("IOTA.MAX", {"YEARS", "DAYS", "HOURS", "MINUTES", "SECONDS"}, {99999, 365, 24, 60, 60}, true);
 	CALLBACK			= enum("IOTA.CALLBACK", {"ON_SECOND", "ON_MINUTE", "ON_HOUR", "ON_DAY", "ON_YEAR"}, {"onMinute", "onSecond", "onHour", "onDay", "onYear"}, true);
 };
 
@@ -248,7 +248,7 @@ iota = class "iota" {
 			--oIota[sIndex] 			= 0;
 			--oIota.marker[sName] 	= 0;
 		--end
-		
+
 		--setup callbacks
 		for _, eItem in IOTA.CALLBACK() do
 			oIota.callbacks[eItem.value]	= 0;
