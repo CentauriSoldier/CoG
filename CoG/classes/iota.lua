@@ -64,10 +64,10 @@ IOTA 						= {
 	CALLBACK			= enum("IOTA.CALLBACK", {"ON_SECOND", "ON_MINUTE", "ON_HOUR", "ON_DAY", "ON_YEAR"}, {"onMinute", "onSecond", "onHour", "onDay", "onYear"}, true);
 };
 
---table.settype(IOTA, "IOTA");
---table.settype(IOTA.MAX, "IOTA.MAX");
---table.settype(IOTA.CALLBACK, "IOTA.CALLBACK");
---table.lock(IOTA);
+table.settype(IOTA, 			"IOTA");
+table.setsubtype(IOTA.MAX, 		"IOTA.MAX");
+table.setsubtype(IOTA.CALLBACK, "IOTA.CALLBACK");
+table.lock(IOTA);
 
 local tIota = {};
 local tIotas = {};
@@ -248,7 +248,7 @@ iota = class "iota" {
 			--oIota[sIndex] 			= 0;
 			--oIota.marker[sName] 	= 0;
 		--end
-
+		
 		--setup callbacks
 		for _, eItem in IOTA.CALLBACK() do
 			oIota.callbacks[eItem.value]	= 0;
