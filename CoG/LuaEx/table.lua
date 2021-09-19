@@ -137,7 +137,7 @@ function table.settype(tInput, sType)
 		--look for an existing meta table and get its type
 		local tMeta 	= getmetatable(tInput);
 		local sMetaType = rawtype(tMeta);
-		local bIsTable = sMetaType == "table";
+		local bIsTable 	= sMetaType == "table";
 
 		if (bIsTable or sMetaType == "nil") then
 			tMeta = bIsTable and tMeta or {};
