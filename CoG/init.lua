@@ -154,7 +154,8 @@ point 		= import(rClassesGeometry	..".point");
 line 		= import(rClassesGeometry	..".line");
 shape 		= import(rClassesShapes		..".shape");
 circle 		= import(rClassesShapes		..".circle");
-hex 		= import(rClassesShapes		..".hex");
+polygon		= import(rClassesShapes		..".polygon");
+hexagon		= import(rClassesShapes		..".hexagon");
 rectangle 	= import(rClassesShapes		..".rectangle");
 triangle	= import(rClassesShapes		..".triangle");
 
@@ -163,11 +164,11 @@ pot 		= import(rClassesComponent..".pot");
 protean 	= import(rClassesComponent..".protean");
 
 --classes (other)
---action 		= import(rClasses.."action");
+--action 	= import(rClasses.."action");
 --bank 		= import(rClasses.."bank");
 --combator 	= import(rClasses.."combator");
 iota 		= import(rClasses..".iota");
 --targetor	= import(rClasses.."targetor");
-
+aStar		= import(rClasses..".aStar");
 --useful if using CoG as a dependency in multiple modules to prevent the need for loading multilple times
 COG_INIT = true;
