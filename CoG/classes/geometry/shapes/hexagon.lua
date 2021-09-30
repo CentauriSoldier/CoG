@@ -47,10 +47,24 @@ local hexagon = class "hexagon" : extends(polygon) {
 		this.height = this.size * 2;
 
 		--calculate the vertices
-		calculateVertices(this);
+		--calculateVertices(this);
 
 		--have the parent class process the object
-		this:super();
+		this:update();
+	end,
+
+	recalculateVertices = function(this)
+		this.vertices 		= {};
+		local nDegreeMod 	= this.isFlat and HEX_POINT_TOP_DEGREE_MODIFIER or 0;
+
+		--calculate the vertices
+		for x = 1, 6 do
+		    local angle_deg = 60 * (x - 1) - nDegreeMod;
+		    local angle_rad = math.pi / 180 * angle_deg
+
+			this.vertices[x] = point(this.center.x + this.size * math.cos(angle_rad),
+		    						 this.center.y + this.size * math.sin(angle_rad));
+		end
 	end,
 };
 

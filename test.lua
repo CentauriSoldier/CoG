@@ -8,4 +8,9 @@ end
 --local g = aStar.Grid(100, 60);
 
 local h = hexagon(point, 2, false);
-p(h.vertices[1])
+--local r = rectangle(point(33, 66), 40, 20);
+
+--h.width = 33;
+--r:update();
+
+p(h)

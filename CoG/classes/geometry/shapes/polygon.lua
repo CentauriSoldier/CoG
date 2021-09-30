@@ -56,17 +56,43 @@ local function updateCentroid(this)
 	this.centroid.y = nSumY / nVertices;
 end
 
+
+--[[!
+	@mod polygon
+	@func polygon
+	@desc Used for creating various polygons and handling point
+	detection and detector properties. The child class is responsible
+	for creating vertices (upon construction) and storing them
+	in the public property of 'vertices' (a numerically-indexed
+	table whose values are points). The child class is also
+	responsible for updating the polygon whenever changes are
+	made to size or position. This is done by calling super:update().
+	It is expected, when creating the vertices, that a child class will
+	insert them into the table starting with the first vertex and continuing
+	around the polygon clockwise.
+]]
 local polygon = class "polygon" : extends(shape) {
 
-	__construct = function(this)
-		--check and import the vertices
-		--importVertices(tVertices);
+	--__construct = function(this)
+	--end,
 
-		--update the detector
-		updateDetector(this);
+	__tostring = function(this)
+		local sRet = "";
 
-		--calculate the centroid point
-		updateCentroid(this);
+		for k, v in pairs(this) do
+			local sVType = type(v);
+
+			if sVType == "number" 		or sVType == "point" 	or
+			   sVType == "line"			or sVType == "shape" 	or
+			   sVType == "polygon"		or sVType == "circle" 	or
+			   sVType == "hexagon"		or sVType == "triangle" or
+			   sVType == "rectangle"	or sVType == "triangle" then
+				sRet = sRet..tostring(k)..": "..tostring(v).."\r\n";
+			end
+
+		end
+
+		return sRet;
 	end,
 
 	containsPoint 	= function(this, oPoint)
@@ -92,7 +118,12 @@ local polygon = class "polygon" : extends(shape) {
 		return bInside;
 	end,
 
+	recalculateVertices = function()
+		error("The recalculateVertices function has not been implemeneted in the child class.");
+	end,
+
 	update = function(this)
+		this:recalculateVertices(this);
 		updateDetector(this);
 		updateCentroid(this);
 	end,

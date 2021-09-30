@@ -53,10 +53,9 @@ local triangle = class "triangle" : extends(shape) {
 	__construct = function(this, pTopLeft, nWidth, nHeight)
 		this:super();
 		this.vertices 	= {
-			topLeft 	= point(),
-			bottomLeft 	= point(),
-			bottomRight = point(),
-			center		= point();
+			[1]	= point(),
+			[2]	= point(),
+			[3] = point(),
 		};
 		this.width 		= type(nWidth) 	== "number" and nWidth 	or 0;
 		this.height 	= type(nHeight) == "number" and nHeight or 0;

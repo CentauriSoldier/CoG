@@ -29,6 +29,7 @@ local class 		= class;
 local serialize		= serialize;
 local deserialize	= deserialize;
 local type 			= type;
+local rawtype		= rawtype;
 local math			= math;
 
 local point = class "point" {
@@ -41,17 +42,8 @@ local point = class "point" {
 	@param nY number The y value. If nil, it defaults to 0.
 	]]
 	__construct = function(this, nX, nY)
-		this.x = 0;
-		this.y = 0;
-
-		if (type(nX) == "number") then
-			this.x = nX;
-		end
-
-		if (type(nY) == "number") then
-			this.y = nY;
-		end
-
+		this.x = rawtype(nX) == "number" and nX or 0;
+		this.y = rawtype(nY) == "number" and nY or 0;
 	end,
 
 	--[[
