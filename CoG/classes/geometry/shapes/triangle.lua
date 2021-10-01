@@ -30,19 +30,9 @@ local serialize		= serialize;
 local deserialize	= deserialize;
 local type 			= type;
 
-local function recalculateVertices(this)
-	this.vertices.top.x	 		= this.vertices.topLeft.x + this.width;
-	this.vertices.top.y	 		= this.vertices.topLeft.y;
-	this.vertices.bottomLeft.x 	= this.vertices.topLeft.x
-	this.vertices.bottomLeft.y 	= this.vertices.topLeft.y + this.height;
-	this.vertices.bottomRight.x	= this.vertices.topRight.x;
-	this.vertices.bottomRight.y	= this.vertices.bottomLeft.y;
-	this.vertices.center.x		= this.vertices.topLeft.x + this.width / 2;
-	this.vertices.center.y		= this.vertices.topLeft.y + this.height / 2;
-end
+local triangleUpdate;
 
-
-local triangle = class "triangle" : extends(shape) {
+local triangle = class "triangle" : extends(polygon) {
 
 	--[[
 	@desc The constructor for the triangle class.
@@ -50,34 +40,17 @@ local triangle = class "triangle" : extends(shape) {
 	@mod triangle
 	@ret oTriangle triangle A triangle object. Public properties are vertices (a table containing points for each corner [topLeft, topRight, bottomRight, bottomLeft, center]), width and height.
 	]]
-	__construct = function(this, pTopLeft, nWidth, nHeight)
-		this:super();
+	__construct = function(this, oPoint1, oPoint2, oPoint3)
 		this.vertices 	= {
-			[1]	= point(),
-			[2]	= point(),
-			[3] = point(),
+			[1]	= type(oPoint1) == "point" and point(oPoint1.x, oPoint1.y) or point(),
+			[2]	= type(oPoint2) == "point" and point(oPoint2.x, oPoint2.y) or point(),
+			[3] = type(oPoint3) == "point" and point(oPoint3.x, oPoint3.y) or point(),
 		};
-		this.width 		= type(nWidth) 	== "number" and nWidth 	or 0;
-		this.height 	= type(nHeight) == "number" and nHeight or 0;
 
-		--check the point input
-		if (type(pTopLeft) == "point") then
-			this.vertices.topLeft.x = pTopLeft.x;
-			this.vertices.topLeft.y	= pTopLeft.y;
-		end
+		--don't pass the vertices table or have the polygon do an update
+		this:super(nil, true);
 
-		recalculateVertices(this);
-	end,
-
-
-	area = function()
-		return this.width * this.height;
-	end,
-
-
-	containsPoint = function(this, nX, nY)
-		return nX >= this.vertices.topLeft.x and nX <= this.vertices.topRight.x and
-			   nY >= this.vertices.topLeft.y and nY <= this.vertices.bottomRight.y;
+		this:update();
 	end,
 
 	deserialize = function(this, sData)
@@ -92,8 +65,32 @@ local triangle = class "triangle" : extends(shape) {
 		this.height 	= tData.height;
 	end,
 
+	isAcute = function(this)
+		return false;
+	end,
+
+	isEquilateral = function(this)
+		return false;
+	end,
+
+	isIsosceles = function(this)
+		return false;
+	end,
+
+	isObtuse = function(this)
+		return false;
+	end,
+
+	isRight = function(this)
+	   return false;
+   	end,
+
+	isScalene = function(this)
+		return false;
+	end,
+
 	perimeter = function(this)
-		return 2 * this.width + 2 * this.height;
+		return nil;
 	end,
 
 --[[
@@ -102,7 +99,14 @@ local triangle = class "triangle" : extends(shape) {
 	end
 ]]
 	recalculateVertices = function(this)
-		recalculateVertices(this);
+		this.vertices.top.x	 		= this.vertices.topLeft.x + this.width;
+		this.vertices.top.y	 		= this.vertices.topLeft.y;
+		this.vertices.bottomLeft.x 	= this.vertices.topLeft.x
+		this.vertices.bottomLeft.y 	= this.vertices.topLeft.y + this.height;
+		this.vertices.bottomRight.x	= this.vertices.topRight.x;
+		this.vertices.bottomRight.y	= this.vertices.bottomLeft.y;
+		this.vertices.center.x		= this.vertices.topLeft.x + this.width / 2;
+		this.vertices.center.y		= this.vertices.topLeft.y + this.height / 2;
 	end,
 
 
@@ -132,7 +136,10 @@ local triangle = class "triangle" : extends(shape) {
 		return tData;
 	end,
 
+	updateArea = function()
+		return (this.width * this.height) / 2;
+	end,
 
 };
 
-return rectangle;
+return triangle;

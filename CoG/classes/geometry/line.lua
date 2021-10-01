@@ -90,10 +90,13 @@ class "line" {
 		return this;
 	end,
 
+	getAngleTo = function(this, oOther)
+		
+	end,
+
 	length = function(this)
 		return math.math.sqrt( (this.start.x - this.stop.x) ^ 2 + (this.start.y - this.stop.y) ^ 2);
 	end,
-
 
 	intersects = function(this, oOther)
 

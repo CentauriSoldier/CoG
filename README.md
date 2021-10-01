@@ -20,6 +20,7 @@ A lua framework containing support scripts such as shapes, abstract potentiomete
 - Change: updated all modules and classes to use the new LuaEx system.
 - Change: removed queue class.
 - Change: removed stack class.
+- Change: reworked the shapes.
 
 **0.4**
 - Removed the class module (as well other commonly-used Lua libraries) and ported them to a new project. Added CoG's dependency on said project.

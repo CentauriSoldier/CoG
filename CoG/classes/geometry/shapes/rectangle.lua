@@ -44,6 +44,8 @@ local RECTANGLE_VERTEX_TOP_RIGHT 	= RECTANGLE_VERTEX_TOP_RIGHT;
 local RECTANGLE_VERTEX_BOTTOM_RIGHT = RECTANGLE_VERTEX_BOTTOM_RIGHT;
 local RECTANGLE_VERTEX_BOTTOM_LEFT 	= RECTANGLE_VERTEX_BOTTOM_LEFT;
 
+local tProtectedRepo = {};
+
 local rectangle = class "rectangle" : extends(polygon) {
 
 	--[[
@@ -52,28 +54,69 @@ local rectangle = class "rectangle" : extends(polygon) {
 	@mod rectangle
 	@ret oRectangle rectangle A rectangle object. Public properties are vertices (a numerically-indexed table containing points for each corner), width and height.
 	]]
-	__construct = function(this, pTopLeft, nWidth, nHeight)
-		this.vertices = {
+	__construct = function(this, tProtected, pTopLeft, nWidth, nHeight)
+		tProtectedRepo[this] = rawtype(tProtected) == "table" and tProtected or {};
+		local tProt = tProtectedRepo[this];
+
+		--setup the protected fields
+		tProt.vertices = {
 			[RECTANGLE_VERTEX_TOP_LEFT] 	= point(),
 			[RECTANGLE_VERTEX_TOP_RIGHT]	= point(),
 			[RECTANGLE_VERTEX_BOTTOM_RIGHT]	= point(),
 			[RECTANGLE_VERTEX_BOTTOM_LEFT]	= point(),
 		};
-		this.width 	= rawtype(nWidth) 	== "number" and nWidth 	or 0;
-		this.height = rawtype(nHeight) 	== "number" and nHeight or 0;
+		tProt.width 	= rawtype(nWidth) 	== "number" and nWidth 	or 0;
+		tProt.height 	= rawtype(nHeight) 	== "number" and nHeight or 0;
 
 		--check the point input
 		if (type(pTopLeft) == "point") then
-			this.vertices[RECTANGLE_VERTEX_TOP_LEFT].x = pTopLeft.x;
-			this.vertices[RECTANGLE_VERTEX_TOP_LEFT].y = pTopLeft.y;
+			tProt.vertices[RECTANGLE_VERTEX_TOP_LEFT].x = pTopLeft.x;
+			tProt.vertices[RECTANGLE_VERTEX_TOP_LEFT].y = pTopLeft.y;
 		end
 
-		this:update();
+		--setup the protected methods
+		tProt.updateVertices = function(tProt)
+			local tVertices 	= tProt.vertices;
+			local pMyTopLeft	= tVertices[RECTANGLE_VERTEX_TOP_LEFT];
+			local pTopRight 	= tVertices[RECTANGLE_VERTEX_TOP_RIGHT];
+			local pBottomRight 	= tVertices[RECTANGLE_VERTEX_BOTTOM_RIGHT];
+			local pBottomLeft 	= tVertices[RECTANGLE_VERTEX_BOTTOM_LEFT];
+
+			pTopRight.x 	= pMyTopLeft.x + tProt.width;
+			pTopRight.y 	= pMyTopLeft.y;
+			pBottomRight.x 	= pTopRight.x;
+			pBottomRight.y	= pTopRight.y + tProt.height;
+			pBottomLeft.x	= pMyTopLeft.x;
+			pBottomLeft.y	= pBottomRight.y;
+		end
+
+		tProt.updateArea = function(tProt)
+			tProt.area = tProt.width * tProt.height;
+		end
+
+		tProt.updatePerimeterAndEdges = function(tProt)
+			tProt.perimeter = 2 * tProt.width + 2 * tProt.height;
+			local tVertices = tProt.vertices;
+
+			tProt.edges 	= {
+				[1] = tVertices[1].x + tVertices[2].x,
+				[2] = tVertices[2].y + tVertices[3].y,
+				[3] = tVertices[1].x + tVertices[2].x,
+				[4] = tVertices[2].y + tVertices[3].y,
+			};
+		end
+
+		--pass this classes fields but don't pass the vertices table or have the polygon do an update
+		this:super(tProt, nil, true);
+
+		--build the rectangle based on the input anchor point, width and height
+		tProt:updateVertices();
+		tProt:updateDetector();
+		tProt:updateCentroid();
+		tProt:updateArea();
+		tProt:updatePerimeterAndEdges();
 	end,
 
-	area = function(this)
-		return this.width * this.height;
-	end,
 
 	deserialize = function(this, sData)
 		local tData = deserialize.table(sData);
@@ -88,31 +131,13 @@ local rectangle = class "rectangle" : extends(polygon) {
 		this.height 	= tData.height;
 	end,
 
-	perimeter = function(this)
-		return 2 * this.width + 2 * this.height;
-	end,
+
 
 --[[
 	pointIsOnPerimeter = function(this, vPoint, vY)
 
 	end
 ]]
-	recalculateVertices = function(this)
-		local tVertices 	= this.vertices;
-		local pTopLeft 		= tVertices[RECTANGLE_VERTEX_TOP_LEFT];
-		local pTopRight 	= tVertices[RECTANGLE_VERTEX_TOP_RIGHT];
-		local pBottomRight 	= tVertices[RECTANGLE_VERTEX_BOTTOM_RIGHT];
-		local pBottomLeft 	= tVertices[RECTANGLE_VERTEX_BOTTOM_LEFT];
-		local nHeight 		= this.height;
-		local nWidth 		= this.width;
-
-		pTopRight.x 	= pTopLeft.x + nWidth;
-		pTopRight.y 	= pTopLeft.y;
-		pBottomRight.x 	= pTopRight.x;
-		pBottomRight.y	= pTopRight.y + nHeight;
-		pBottomLeft.x	= pTopLeft.x;
-		pBottomLeft.y	= pBottomRight.y;
-	end,
 
 
 	--[[!
