@@ -1,14 +1,16 @@
 local tProtectedRepo = {};
 
-local function importVertices(tProt, tVertices)
-	local nVerticesCount = #tVertices;
 
-		if (nVerticesCount > 0) then
+
+local function importVertices(tProt, tVertices, nMax)
+	nMax = rawtype(nMax) == "number" and nMax or #tVertices;
+
+		if (nMax > 0) then
 		tProt.vertices = {};
 
-		for x = 1, nVerticesCount do
+		for x = 1, nMax do
 
-			if (type(tVertices[x]) == "point")  then
+			if (type(tVertices[x]) == "point") then
 				tProt.vertices[#tProt.vertices + 1] = point(tVertices[x].x, tVertices[x].y);
 			end
 
@@ -50,6 +52,7 @@ local function updateCentroid(tProt)
 	local nVertices = #tProt.vertices;
 
 	for x = 1, nVertices do
+		--print(tProt.vertices[x])
 		local oPoint = tProt.vertices[x];
 		nSumX = nSumX + oPoint.x;
 		nSumY = nSumY + oPoint.y;
@@ -79,7 +82,7 @@ local function updatePerimeterAndEdges(tProt)
 	local nSum 				= 0;
 	local tVertices 		= tProt.vertices;
 	local nVerticesCount 	= #tVertices;
-	tProt.edges 				= {};
+	tProt.edges 			= {};
 
 	for i = 1, nVerticesCount do
 		local oPoint1 = tVertices[i];
@@ -90,8 +93,6 @@ local function updatePerimeterAndEdges(tProt)
 
 	tProt.perimeter = nSum;
 end
-
-local function placeHolder() end
 
 --[[!
 	@mod polygon
@@ -106,20 +107,31 @@ local function placeHolder() end
 	It is expected, when creating the vertices, that a child class will
 	insert them into the table starting with the first vertex and continuing
 	around the polygon clockwise.
+
+	Protected fields:
+	area 		(number)
+	edges		(numerically-indexed table of numbers representing the length of each edge)
+	perimeter	(number)
+	vertices 	(numerically-indexed table of points)
+
+
 ]]
 local polygon = class "polygon" : extends(shape) {
 
 	__construct = function(this, tProtected, tVertices, bSkipUpdate)
 		tProtectedRepo[this] = rawtype(tProtected) 	== "table" and tProtected or {};
+		--super(tProtectedRepo[this], true);
 		local tProt = tProtectedRepo[this];
 
-		--setup the protected fields
+		--import (or setup) the protected fields
 		tProt.perimeter	= rawtype(tProt.perimeter) 	== "number" and tProt.perimeter 	or 0;
+		--print(rawtype(tProt.vertices))
 		tProt.vertices	= rawtype(tProt.vertices)	== "table" 	and tProt.vertices 		or {};
 		tProt.edges		= rawtype(tProt.edges)		== "table" 	and tProt.edges 		or {};
 		tProt.area 		= rawtype(tProt.area) 		== "number" and tProt.area 			or 0;
 
 		--setup the protected methods
+		tProt.importVertices			= importVertices;
 		tProt.updateArea				= updateArea;
 		tProt.updateCentroid 			= updateCentroid;
 		tProt.updateDetector 			= updateDetector;
@@ -131,17 +143,20 @@ local polygon = class "polygon" : extends(shape) {
 
 		--import the vertices (if present)
 		if (rawtype(tVertices) == "table") then
-			importVertices(tProt, tVertices);
+			tProt:importVertices(tVertices);
 		end
 
 		--creates mock edge lengths until the next update
-		for x = 1, #tProt.vertices do
-			tProt.edges[x] = 0;
-		end
+		--for x = 1, #tProt.vertices do
+			--tProt.edges[x] = 0;
+		--end
 
 		--update the polygon (if not skipped)
 		if (not bSkipUpdate) then
-		--	this:update();
+			tProt:updatePerimeterAndEdges();
+			tProt:updateDetector();
+			tProt:updateCentroid();
+			tProt:updateArea();
 		end
 
 	end,
@@ -164,6 +179,32 @@ local polygon = class "polygon" : extends(shape) {
 
 		return sRet;
 	end,
+
+
+	containsCoord 	= function(this, nX, nY)
+		local tProt 	= tProtectedRepo[this];
+		local tDetector = tProt.detector;
+		local nDetector = #tDetector;
+		local nLastPX 	= tDetector[nDetector-2]
+		local nLastPY 	= tDetector[nDetector-1]
+		local bInside 	= false;
+
+		for index = 1, #tDetector, 3 do
+			local nPX = tDetector[index];
+			local nPY = tDetector[index+1];
+			local nDeltaX_Div_DeltaY = tDetector[index+2];
+
+			if ((nPY > nY) ~= (nLastPY > nY)) and (nX < (nY - nPY) * nDeltaX_Div_DeltaY + nPX) then
+				bInside = not bInside;
+			end
+
+			nLastPX = nPX;
+			nLastPY = nPY;
+		end
+
+		return bInside;
+	end,
+
 
 	containsPoint 	= function(this, oPoint)
 		local tProt 	= tProtectedRepo[this];
@@ -190,7 +231,7 @@ local polygon = class "polygon" : extends(shape) {
 	end,
 
 	intersects = function(this, oOther)
-
+		return false;
 	end,
 
 	isConcave = function(this)
@@ -209,13 +250,17 @@ local polygon = class "polygon" : extends(shape) {
 		return false;
 	end,
 
-	--[[update = function(this)
-		this:updateVertices();
-		this:updatePerimeterAndEdges();
-		this:updateDetector();
-		this:updateCentroid();
-		this:updateArea();
-	end,]]
+	getArea = function(this)
+		return tProtectedRepo[this].area;
+	end,
+
+	getCentroid = function(this)
+		return tProtectedRepo[this].centroid;
+	end,
+
+	getVertex = function(this, nIndex)
+		return tProtectedRepo[this].vertices[nIndex];
+	end,
 
 	setVertex = function(this, nIndex, oPoint)
 		local tProt = tProtectedRepo[this];
@@ -223,18 +268,17 @@ local polygon = class "polygon" : extends(shape) {
 		if (tProt.vertices[nIndex] ~= nil) then
 			tProt.vertices[nIndex].x = oPoint.x;
 			tProt.vertices[nIndex].y = oPoint.y;
+			tProt:updatePerimeterAndEdges();
+			tProt:updateDetector();
+			tProt:updateCentroid();
+			tProt:updateArea();
 		end
 
 	end,
 
-	setVertices = function(this, nIndex, tPoints)
+	setVertices = function(this, tPoints)
 		local tProt = tProtectedRepo[this];
-
-		if (tProt.vertices[nIndex] ~= nil) then
-			tProt.vertices[nIndex].x = oPoint.x;
-			tProt.vertices[nIndex].y = oPoint.y;
-		end
-
+		tProt:importVertices(tPoints, #tProt.vertices);
 	end,
 };
 

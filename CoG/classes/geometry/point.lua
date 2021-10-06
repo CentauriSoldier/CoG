@@ -41,7 +41,7 @@ local point = class "point" {
 	@param nX number The x value. If nil, it defaults to 0.
 	@param nY number The y value. If nil, it defaults to 0.
 	]]
-	__construct = function(this, nX, nY)
+	__construct = function(this, _ignore_, nX, nY)
 		this.x = rawtype(nX) == "number" and nX or 0;
 		this.y = rawtype(nY) == "number" and nY or 0;
 	end,

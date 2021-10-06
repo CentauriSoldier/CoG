@@ -16,46 +16,20 @@ end
 --local po = polygon({point(1, 3), point(7, 3), point(7, 7), point(4, 7)});
 
 --p(po.area)
+--local poi = point(5, 5);
+--print("poi:"..tostring(poi));
 --local s = rectangle(point(), 40, 20)
---p(s)
+--p(s);
 
-local tProtectedRepo = {};
+--p(s:getVertex(2));
 
-local animal = class "animal" {
+--local l = line(point(-25, -53), point(200, 68))
+--l:setStart(point(0, 0))
+--print(l:getDistance())
 
-	__construct = function(this, protected, sName, bIsBiped)
-		--setup the protected table for this instance (or import the given one if it's not nil)
-		tProtectedRepo[this] = rawtype(protected) == "table" and protected or {};
+local l1 = line(point(45, 67), point(412, 234))
+local l3 = line(point(45, 67), point(412, 234))
+local l2 = line(point(145, -600), point(3, 3))
 
-		--for readability
-		local tProt = tProtectedRepo[this];
-
-		--create the protected properties
-		tProt.name 		= type(sName) 		== "string" and sName 		or "";
-		tProt.isBiped 	= type(bIsBiped)	== "string" and bIsBiped 	or false;
-
-	end,
-
-
-};
-
-local dog = class "dog" : extends(animal) {
-
-	__construct = function(this, protected, sName)
-		--setup the protected table for this instance (or import the given one if it's not nil)
-		tProtectedRepo[this] = rawtype(protected) == "table" and protected or {};
-
-		--for readability
-		local tProt = tProtectedRepo[this];
-
-		--call the parent constructor
-		this:super(tProt, sName, false);
-	end,
-
-	bark = function(this)
-		print(tProtectedRepo[this].name.." says, \"Woof!\".");
-	end,
-};
-
-local spot = dog("Spot");
-spot:bark();
+print(l1 == l3);
+--print(l2)
