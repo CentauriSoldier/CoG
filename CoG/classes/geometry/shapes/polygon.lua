@@ -8,11 +8,13 @@ local SHAPE_ANCHOR_BOTTOM_LEFT 	= SHAPE_ANCHOR_BOTTOM_LEFT;
 local SHAPE_ANCHOR_CENTROID		= SHAPE_ANCHOR_CENTROID;
 local SHAPE_ANCHOR_DEFAULT		= SHAPE_ANCHOR_DEFAULT;
 local class 					= class;
+local deserialize				= deserialize;
 local line 						= line;
 local math 						= math;
 local pairs 					= pairs;
 local point 					= point;
 local rawtype 					= rawtype;
+local serialize					= serialize;
 local table 					= table;
 local tostring 					= tostring;
 local type 						= type;
@@ -174,10 +176,17 @@ end
 	around the polygon clockwise.
 
 	Protected fields:
-	area 		(number)
-	edges		(numerically-indexed table of numbers representing the length of each edge)
-	perimeter	(number)
-	vertices 	(numerically-indexed table of points)
+	anchorIndex
+	area 					(number)
+	edges					(numerically-indexed table of lines)
+	perimeter				(number)
+	vertices 				(numerically-indexed table of points)
+	verticesCount			(number) NO CHILD CLASS SHOULD MODIFY THIS VALUE
+	importVertices 			(function)
+	updateArea				(function)
+	updateAnchors 			(function)
+	updateDetector 			(function)
+	updatePerimeterAndEdges (function)
 
 
 ]]
@@ -296,6 +305,11 @@ local polygon = class "polygon" : extends(shape) {
 
 		return bInside;
 	end,
+
+	deserialize = function(this)
+		error("COMPLETE THIS")
+	end,
+
 --TODO should these return a copy of the point?
 	getPos = function(this)
 		local tProt	= tProtectedRepo[this];
@@ -341,14 +355,22 @@ local polygon = class "polygon" : extends(shape) {
 	getCentroid = function(this)
 		return tProtectedRepo[this].anchors[SHAPE_ANCHOR_CENTROID];
 	end,
-
+--TODO should these return a copy
 	getEdge = function(this, nIndex)
 		return tProtectedRepo[this].edges[nIndex] or nil;
+	end,
+	--TODO return a copy
+	getEdges = function(this)
+		return tProtectedRepo[this].edges or nil;
 	end,
 
 --TODO should these return a copy of the point?
 	getVertex = function(this, nIndex)
 		return tProtectedRepo[this].vertices[nIndex];
+	end,
+
+	serialize = function(this)
+		return serialize.table(tProtectedRepo[this]);
 	end,
 
 	setAnchorIndex = function(this, nIndex)

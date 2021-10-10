@@ -317,22 +317,25 @@ return class "line" {
 		@ret sData StringOrTable The data, returned as a serialized table (string) or a table is the defer option is set to true.
 	!]]
 	serialize = function(this, bDefer)
-		local tData = {
-			start 	= this.start:seralize(),
-			stop 	= this.stop:serialize(),
+		local tProt = tProtectedRepo[this];
+		--[[local tData = {
+			start 	= tProt.start:seralize(),
+			stop 	= tProt.stop:serialize(),
 		};
 
 		if (not bDefer) then
 			tData = serialize.table(tData);
 		end
-		error("UPDATE THIS FUNCTION")--TODO UPDATE THIS
-		return tData;
+
+		return tData;]]
+		return serialize.table(tProt);
 	end,
 
 
 	setEnd = function(this, oPoint, bSkipUpdate)
-		tProtectedRepo[this].stop.x = oPoint.x;
-		tProtectedRepo[this].stop.y = oPoint.y;
+		local tProt = tProtectedRepo[this];
+		tProt.stop.x = oPoint.x;
+		tProt.stop.y = oPoint.y;
 
 		if (not bSkipUpdate) then
 			update(this);
@@ -342,8 +345,9 @@ return class "line" {
 
 
 	setStart = function(this, oPoint, bSkipUpdate)
-		tProtectedRepo[this].start.x = oPoint.x;
-		tProtectedRepo[this].start.y = oPoint.y;
+		local tProt = tProtectedRepo[this];
+		tProt.start.x = oPoint.x;
+		tProt.start.y = oPoint.y;
 
 		if (not bSkipUpdate) then
 			update(this);

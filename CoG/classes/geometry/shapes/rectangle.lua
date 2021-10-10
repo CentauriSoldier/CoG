@@ -58,8 +58,8 @@ return class "rectangle" : extends(polygon) {
 		tProt.width 	= rawtype(nWidth) 	== "number" and nWidth 	or 0;
 		tProt.height 	= rawtype(nHeight) 	== "number" and nHeight or 0;
 
-		--set the anchor point
-		tProt.anchorIndex = 1; --the top left vertex
+		--set the anchor point (to the top left vertex)
+		tProt.anchorIndex = 1;
 
 		--check the point input
 		if (type(pTopLeft) == "point") then
@@ -78,19 +78,6 @@ return class "rectangle" : extends(polygon) {
 			tProt.area = tProt.width * tProt.height;
 		end
 
-		tProt.updatePerimeterAndEdges = function(tProt)
-			tProt.perimeter = 2 * tProt.width + 2 * tProt.height;
-			local tVertices = tProt.vertices;
-
-			tProt.edges 	= {
-				[1] = math.abs(tVertices[1].x + tVertices[2].x),
-				[2] = math.abs(tVertices[2].y + tVertices[3].y),
-				[3] = math.abs(tVertices[1].x + tVertices[2].x),
-				[4] = math.abs(tVertices[2].y + tVertices[3].y),
-			};
-		end
-
-		--pass this classes fields but don't pass the vertices table or have the polygon do an update
 		this:super(tProt, nil, true);
 
 		--update the rectangle
@@ -130,7 +117,7 @@ return class "rectangle" : extends(polygon) {
 		@module rectangle
 		@param bDefer boolean Whether or not to return a table of data to be serialized instead of a serialize string (if deferring serializtion to another object).
 		@ret sData StringOrTable The data, returned as a serialized table (string) or a table is the defer option is set to true.
-	!]]
+	!
 	serialize = function(this, bDefer)
 		local tData = {
 			vertices 	= {
@@ -149,7 +136,7 @@ return class "rectangle" : extends(polygon) {
 		end
 
 		return tData;
-	end,
+	end,]]
 
 
 	setHeight = function(this, nHeight)
