@@ -126,7 +126,8 @@ local point = class "point" {
 		return this;
 	end,
 
-	distance = function(this, oOther)
+	--[[deprecated...this is a line function
+	distanceTo = function(this, oOther)
 		local nRet = 0;
 
 		if (type(this) == "point" and type(oOther) == "point") then
@@ -135,7 +136,8 @@ local point = class "point" {
 
 		return nRet;
 	end,
-
+	]]
+	
 	--[[!
 		@desc Serializes the object's data.
 		@func point.serialize
@@ -156,7 +158,8 @@ local point = class "point" {
 		return tData;
 	end,
 
-	slope = function(this, oOther)
+	--[[deprecated...this is a line function
+	slopeTo = function(this, oOther)
 		local nRet = 0;
 
 		if (type(this) == "point" and type(oOther) == "point") then
@@ -173,7 +176,7 @@ local point = class "point" {
 		end
 
 		return nRet;
-	end,
+	end,]]
 };
 
 return point;

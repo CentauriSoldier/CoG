@@ -24,32 +24,12 @@
 @website https://github.com/CentauriSoldier
 *]]
 
---[[
---TODO this does not works correctly...fix it
-theta = function(this, oOther)
-	local nRet = 0;
-
-	if (type(this) == "point" and type(oOther) == "point") then
-		nXDelta = this.x - oOther.x;
-		nYDelta = this.y - oOther.y;
-
-		if (nYDelta == 0) then
-			nRet = MATH.UNDEF;
-		else
-			nRet = math.atan(nYDelta / nXDelta);
-		end
-
-	end
-
-	return nRet;
-end,
-]]
-
 --localization
 local class 		= class;
 local deserialize	= deserialize;
 local math			= math;
 local point 		= point;
+local rawtype		= rawtype;
 local serialize		= serialize;
 local type 			= type;
 local MATH_UNDEF	= MATH_UNDEF;
@@ -59,24 +39,38 @@ local tProtectedRepo = {};
 local function update(this)
 	local tProt = tProtectedRepo[this];
 
-	--update the line's center
-	tProt.center.x = (tProt.start.x + tProt.stop.x) / 2;
-	tProt.center.y = (tProt.start.y + tProt.stop.y) / 2;
+	--update the line's midpoint
+	tProt.midpoint.x = (tProt.start.x + tProt.stop.x) / 2;
+	tProt.midpoint.y = (tProt.start.y + tProt.stop.y) / 2;
 
 	--update the line's slope, theta and y intercept
 	local nYDelta = tProt.stop.y - tProt.start.y;
 	local nXDelta = tProt.stop.x - tProt.start.x;
-	tProt.slopeIsUndefined = nYDelta == 0;
+	tProt.slopeIsUndefined = nXDelta == 0;
 
 	if (tProt.slopeIsUndefined) then
-		tProt.slope 		= MATH.UNDEF;
-		tProt.theta 		= MATH.UNDEF;
-		tProt.yIntercept 	= 0;
+		tProt.slope 		= MATH_UNDEF;
+		tProt.theta 		= 90;
+		tProt.yIntercept 	= MATH_UNDEF;
 	else
 		tProt.slope 		= nYDelta / nXDelta;
-		tProt.theta 		= math.atan(tProt.slope);
+		tProt.theta 		= math.deg(math.atan(tProt.slope));
 		tProt.yIntercept 	= tProt.start.y - tProt.slope * tProt.start.x;
 	end
+
+	--get the standard-form components and set the x intercept
+	tProt.a = nYDelta;--tProt.stop.y - tProt.start.y;
+	tProt.b = tProt.start.x - tProt.stop.x;
+	tProt.c = tProt.a * tProt.start.x + tProt.b * tProt.start.y;
+
+	--TODO left off here...need to account properly for undefined slope
+	--https://findanyanswer.com/how-do-you-find-the-y-intercept-if-the-slope-is-undefined
+	--y = mx + b => 0 = mx + b => -b = mx => x = -b/m
+	tProt.xIntercept = tProt.slopeIsUndefined and tProt.start.x or (tProt.slope == 0 and MATH_UNDEF or -tProt.yIntercept / tProt.slope);
+
+	--update whether or not the intercepts are defined
+	tProt.xInterceptIsUndefined = rawtype(tProt.xIntercept) == "string";
+	tProt.yInterceptIsUndefined = rawtype(tProt.yIntercept) == "string";
 
 	--update the deltas
 	tProt.deltaX = nXDelta;
@@ -88,25 +82,35 @@ end
 
 return class "line" {
 
-	__construct = function(this, tProtected, oStartPoint, oEndPoint)
+	__construct = function(this, tProtected, oStartPoint, oEndPoint, bSkipUpdate)
 		tProtectedRepo[this] = rawtype(tProtected) == "table" and tProtected or {};
 		local tProt = tProtectedRepo[this];
 
-		tProt.start 	= point(0, 0);
-		tProt.stop 		= point(0, 0);
-		tProt.center 	= point(0, 0);
+		tProt.midpoint  = point();
+		tProt.start = type(oStartPoint) == "point" 	and point(oStartPoint.x, oStartPoint.y) or point();
+		tProt.stop 	= type(oEndPoint)	== "point" 	and point(oEndPoint.x, oEndPoint.y) 	or point();
 
-		--if (type(oStartPoint) == "point") then
-			tProt.start.x = oStartPoint.x;
-			tProt.start.y = oStartPoint.y;
-		--end
+		--default the fields (in case no update is performed)
+		tProt.a 					= 0;
+		tProt.b 					= 0;
+		tProt.c 					= 0;
+		tProt.deltaX 				= 0;
+		tProt.deltaY 				= 0;
+		tProt.length 				= 0;
+		tProt.perimter 				= 0;
+		tProt.slope 				= 0;
+		tProt.slopeIsUndefined 		= true;
+		tProt.theta 				= 0;
+		tProt.yIntercept 			= 0;
+		tProt.yInterceptIsUndefined = true;
+		tProt.xIntercept 			= 0;
+		tProt.xInterceptIsUndefined = true;
+		--tProt. = 0;
 
-		--if (type(oEndPoint) == "point") then
-			tProt.stop.x = oEndPoint.x;
-			tProt.stop.y = oEndPoint.y;
-		--end
+		if (not bSkipUpdate) then
+			update(this);
+		end
 
-		update(this);
 	end,
 
 	__tostring = function(this)
@@ -115,16 +119,22 @@ return class "line" {
 
 		sRet = sRet.."start: "..tostring(tProt.start).."\r\n";
 		sRet = sRet.."end: "..tostring(tProt.stop).."\r\n";
-		sRet = sRet.."center: "..tostring(tProt.center).."\r\n";
+		sRet = sRet.."midpoint: "..tostring(tProt.midpoint).."\r\n";
 		sRet = sRet.."slope: "..tProt.slope.."\r\n";
 		sRet = sRet.."theta: "..tProt.theta.."\r\n";
 		sRet = sRet.."delta x: "..tProt.deltaX.."\r\n";
 		sRet = sRet.."delta y: "..tProt.deltaY.."\r\n";
 		sRet = sRet.."length: "..tProt.length.."\r\n";
+		sRet = sRet.."x intercept: "..tProt.xIntercept.."\r\n";
 		sRet = sRet.."y intercept: "..tProt.yIntercept.."\r\n";
+		sRet = sRet.."A: "..tProt.a.."\r\n";
+		sRet = sRet.."B: "..tProt.b.."\r\n";
+		sRet = sRet.."C: "..tProt.c.."\r\n";
+		sRet = sRet.."Vector: <"..tProt.a..", "..tProt.b..">";
 
 		return sRet;
 	end,
+
 
 	__len = function(this)
 		return tProtectedRepo[this].length;
@@ -138,6 +148,7 @@ return class "line" {
 			   tMe.stop.x 	== tOther.stop.x 	and tMe.stop.y 	== tOther.stop.y;
 	end,
 
+
 	deserialize = function(this, sData)
 		local tData = deserialize.table(sData);
 
@@ -148,29 +159,31 @@ return class "line" {
 	end,
 
 
-	drawASCII = function()
+	getASCII = function(this)
+		--TODO shrink the line to proportions of 10s
+		local sRet = "";
 
 
-
+		return sRet;
 	end,
 
---TODO finish this!
-	getAngleTo = function(this, oOther)
-		local tProt = tProtectedRepo[this];
-		local nRet = nil;
 
-		if (type(oOther) == "line") then
-			local oMyPoint 	= tProt.start;
-			local oHisPoint	= oOther.start;
+	--TODO finish this!
+	getObtuseAngleTo = function(this, oOther)
+		local tMe 		= tProtectedRepo[this];
+		local tOther 	= tProtectedRepo[oOther];
 
-			--TODO this is the case where neither slope is undefined...include cases of undefined slopes
-			--y = mx + b
-			local nMyB = oMyPoint.y - oMyPoint.slope * oMyPoint.x;
-			print(nMyB)
+		local nAngle = math.abs(tMe.theta - tOther.theta);
+		return nAngle > 90 and nAngle or 180 - nAngle;
+	end,
 
-		end
 
-		return nRet;
+	getAcuteAngleTo = function(this, oOther)
+		local tMe 		= tProtectedRepo[this];
+		local tOther 	= tProtectedRepo[oOther];
+
+		local nAngle = math.abs(tMe.theta - tOther.theta);
+		return nAngle < 90 and nAngle or 180 - nAngle;
 	end,
 
 
@@ -198,6 +211,9 @@ return class "line" {
 		return tProtectedRepo[this].length;
 	end,
 
+	getMidPoint = function(this)
+		return tProtectedRepo[this].midpoint;
+	end,
 
 	getSlope = function(this)
 		return tProtectedRepo[this].slope;
@@ -214,10 +230,13 @@ return class "line" {
 	end,
 
 
+	getXIntercept = function(this)
+		return tProtectedRepo[this].xIntercept;
+	end,
+
 	getYIntercept = function(this)
 		return tProtectedRepo[this].yIntercept;
 	end,
-
 
 	intersects = function(this, oOther)
 		local tMe 		= tProtectedRepo[this];
@@ -258,16 +277,37 @@ return class "line" {
 		return oRet;
 	end,
 
+	isDistinctFrom = function(this, oOther)
 
-	isParrallel = function(this, oOther)
+	end,
+
+	isParrallelTo = function(this, oOther)
 		local tMe 		= tProtectedRepo[this];
 		local tOther 	= tProtectedRepo[oOther];
+		local bBothSlopesAreDefined 	= (not tMe.slopeIsUndefined) and (not tOther.slopeIsUndefined);
+		local bBothSlopesAreUndefined 	= tMe.slopeIsUndefined and tOther.slopeIsUndefined;
 
-		return (tMe.slopeIsUndefined and tOther.slopeIsUndefined) or
-			   (	(not tMe.slopeIsUndefined and not tOther.slopeIsUndefined)
-			   		 and (tMe.slope == tOther.slope)
+		return bBothSlopesAreUndefined or (bBothSlopesAreDefined and (tMe.slope == tOther.slope));
+	end,
+
+	coincidesWith = function(this, oOther)
+		local tMe 							= tProtectedRepo[this];
+		local tOther 						= tProtectedRepo[oOther];
+		local bBothSlopesAreDefined 		= (not tMe.slopeIsUndefined) and (not tOther.slopeIsUndefined);
+		local bBothSlopesAreUndefined 		= tMe.slopeIsUndefined and tOther.slopeIsUndefined;
+		local bBothXInterceptsAreDefined 	= (not tMe.xInterceptIsUndefined) and (not tOther.xInterceptIsUndefined);
+		local bBothXInterceptsAreUndefined 	= tMe.xInterceptIsUndefined and tOther.xInterceptIsUndefined;
+		local bBothYInterceptsAreDefined 	= (not tMe.yInterceptIsUndefined) and (not tOther.yInterceptIsUndefined);
+		local bBothYInterceptsAreUndefined 	= tMe.yInterceptIsUndefined and tOther.yInterceptIsUndefined;
+		local bAreParrallel					= (bBothSlopesAreUndefined or (bBothSlopesAreDefined and (tMe.slope == tOther.slope)));
+
+		return bAreParrallel and
+			   (
+			   (bBothXInterceptsAreUndefined	or (bBothXInterceptsAreDefined and (tMe.xIntercept == tOther.xIntercept))) and
+			   (bBothYInterceptsAreUndefined	or (bBothYInterceptsAreDefined and (tMe.yIntercept == tOther.yIntercept)))
 			   );
 	end,
+
 
 	--[[!
 		@desc Serializes the object's data.
@@ -290,16 +330,40 @@ return class "line" {
 	end,
 
 
-	setEnd = function(this, oPoint)
+	setEnd = function(this, oPoint, bSkipUpdate)
 		tProtectedRepo[this].stop.x = oPoint.x;
 		tProtectedRepo[this].stop.y = oPoint.y;
-		update(this);
+
+		if (not bSkipUpdate) then
+			update(this);
+		end
+
 	end,
 
 
-	setStart = function(this, oPoint)
+	setStart = function(this, oPoint, bSkipUpdate)
 		tProtectedRepo[this].start.x = oPoint.x;
 		tProtectedRepo[this].start.y = oPoint.y;
-		update(this);
+
+		if (not bSkipUpdate) then
+			update(this);
+		end
+
 	end,
+
+
+	slopeIsDefined = function(this)
+		return not tProtectedRepo[this].slopeIsUndefined;
+	end,
+
+
+	xInterceptIsDefined = function(this)
+		return not tProtectedRepo[this].xInterceptIsUndefined;
+	end,
+
+
+	yInterceptIsDefined = function(this)
+		return not tProtectedRepo[this].yInterceptIsUndefined;
+	end,
+
 };

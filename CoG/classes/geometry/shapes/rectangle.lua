@@ -34,34 +34,9 @@ local rawtype 		= rawtype;
 local serialize		= serialize;
 local type 			= type;
 
-constant("RECTANGLE_VERTEX_TOP_LEFT", 		1);
-constant("RECTANGLE_VERTEX_TOP_RIGHT", 		2);
-constant("RECTANGLE_VERTEX_BOTTOM_RIGHT", 	3);
-constant("RECTANGLE_VERTEX_BOTTOM_LEFT", 	4);
-
-local RECTANGLE_VERTEX_TOP_LEFT 	= RECTANGLE_VERTEX_TOP_LEFT;
-local RECTANGLE_VERTEX_TOP_RIGHT 	= RECTANGLE_VERTEX_TOP_RIGHT;
-local RECTANGLE_VERTEX_BOTTOM_RIGHT = RECTANGLE_VERTEX_BOTTOM_RIGHT;
-local RECTANGLE_VERTEX_BOTTOM_LEFT 	= RECTANGLE_VERTEX_BOTTOM_LEFT;
-
 local tProtectedRepo = {};
 
-local function updateVertices(tProt)
-	local tVertices 	= tProt.vertices;
-	local pMyTopLeft	= tVertices[RECTANGLE_VERTEX_TOP_LEFT];
-	local pTopRight 	= tVertices[RECTANGLE_VERTEX_TOP_RIGHT];
-	local pBottomRight 	= tVertices[RECTANGLE_VERTEX_BOTTOM_RIGHT];
-	local pBottomLeft 	= tVertices[RECTANGLE_VERTEX_BOTTOM_LEFT];
-
-	pTopRight.x 	= pMyTopLeft.x + tProt.width;
-	pTopRight.y 	= pMyTopLeft.y;
-	pBottomRight.x 	= pTopRight.x;
-	pBottomRight.y	= pTopRight.y + tProt.height;
-	pBottomLeft.x	= pMyTopLeft.x;
-	pBottomLeft.y	= pBottomRight.y;
-end
-
-local rectangle = class "rectangle" : extends(polygon) {
+return class "rectangle" : extends(polygon) {
 
 	--[[
 	@desc The constructor for the rectangle class.
@@ -82,6 +57,9 @@ local rectangle = class "rectangle" : extends(polygon) {
 		};
 		tProt.width 	= rawtype(nWidth) 	== "number" and nWidth 	or 0;
 		tProt.height 	= rawtype(nHeight) 	== "number" and nHeight or 0;
+
+		--set the anchor point
+		tProt.anchorIndex = 1; --the top left vertex
 
 		--check the point input
 		if (type(pTopLeft) == "point") then
@@ -117,7 +95,7 @@ local rectangle = class "rectangle" : extends(polygon) {
 
 		--update the rectangle
 		tProt:updateDetector();
-		tProt:updateCentroid();
+		tProt:updateAnchors();
 		tProt:updatePerimeterAndEdges();
 		tProt:updateArea();
 	end,
@@ -136,6 +114,7 @@ local rectangle = class "rectangle" : extends(polygon) {
 		this.height 	= tData.height;
 	end,
 
+
 	getHeight = function(this)
 		return tProtectedRepo[this].height;
 	end,
@@ -143,13 +122,6 @@ local rectangle = class "rectangle" : extends(polygon) {
 	getWidth = function(this)
 		return tProtectedRepo[this].width;
 	end,
-
-
---[[
-	pointIsOnPerimeter = function(this, vPoint, vY)
-
-	end
-]]
 
 
 	--[[!
@@ -179,6 +151,7 @@ local rectangle = class "rectangle" : extends(polygon) {
 		return tData;
 	end,
 
+
 	setHeight = function(this, nHeight)
 		local tProt 	= tProtectedRepo[this];
 		local tVertices = tProt.vertices;
@@ -188,11 +161,12 @@ local rectangle = class "rectangle" : extends(polygon) {
 		tVertices[3].y = tVertices[3].y + nDelta;
 		tVertices[4].y = tVertices[4].y + nDelta;
 
-		tProt:updateCentroid();
+		tProt:updateAnchors();
 		tProt:updateDetector();
 		tProt:updatePerimeterAndEdges();
 		tProt:updateArea();
 	end,
+
 
 	setWidth = function(this, nWidth)
 		local tProt 	= tProtectedRepo[this];
@@ -203,30 +177,9 @@ local rectangle = class "rectangle" : extends(polygon) {
 		tVertices[2].x = tVertices[2].x + nDelta;
 		tVertices[3].x = tVertices[3].x + nDelta;
 
-		tProt:updateCentroid();
+		tProt:updateAnchors();
 		tProt:updateDetector();
 		tProt:updatePerimeterAndEdges();
 		tProt:updateArea();
 	end,
-
-	setPos = function(this, tPoint)
-		local tProt 	= tProtectedRepo[this];
-		local tVertices = tProt.vertices;
-		local nDeltaX 	= tPoint.x - tVertices[1].x;
-		local nDeltaY 	= tPoint.y - tVertices[1].y;
-
-		tVertices[1].x = tPoint.x;
-		tVertices[1].y = tPoint.y;
-		tVertices[2].x = tVertices[2].x + nDeltaX;
-		tVertices[2].y = tVertices[2].y + nDeltaY;
-		tVertices[3].x = tVertices[3].x + nDeltaX;
-		tVertices[3].y = tVertices[3].y + nDeltaY;
-		tVertices[4].x = tVertices[4].x + nDeltaX;
-		tVertices[4].y = tVertices[4].y + nDeltaY;
-
-		tProt:updateCentroid();
-		tProt:updateDetector();
-	end,
 };
-
-return rectangle;

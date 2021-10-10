@@ -1,17 +1,36 @@
 local tProtectedRepo = {};
 
+local SHAPE_ANCHOR_COUNT		= SHAPE_ANCHOR_COUNT;
+local SHAPE_ANCHOR_TOP_LEFT 	= SHAPE_ANCHOR_TOP_LEFT;
+local SHAPE_ANCHOR_TOP_RIGHT 	= SHAPE_ANCHOR_TOP_RIGHT;
+local SHAPE_ANCHOR_BOTTOM_RIGHT = SHAPE_ANCHOR_BOTTOM_RIGHT;
+local SHAPE_ANCHOR_BOTTOM_LEFT 	= SHAPE_ANCHOR_BOTTOM_LEFT;
+local SHAPE_ANCHOR_CENTROID		= SHAPE_ANCHOR_CENTROID;
+local SHAPE_ANCHOR_DEFAULT		= SHAPE_ANCHOR_DEFAULT;
+local class 					= class;
+local line 						= line;
+local math 						= math;
+local pairs 					= pairs;
+local point 					= point;
+local rawtype 					= rawtype;
+local table 					= table;
+local tostring 					= tostring;
+local type 						= type;
 
 
 local function importVertices(tProt, tVertices, nMax)
 	nMax = rawtype(nMax) == "number" and nMax or #tVertices;
 
 		if (nMax > 0) then
-		tProt.vertices = {};
+		tProt.vertices 		= {};
+		tProt.verticesCount = 0;
 
 		for x = 1, nMax do
 
 			if (type(tVertices[x]) == "point") then
-				tProt.vertices[#tProt.vertices + 1] = point(tVertices[x].x, tVertices[x].y);
+				tProt.verticesCount	= tProt.verticesCount + 1;
+				tProt.vertices[tProt.verticesCount + 1] = point(tVertices[x].x, tVertices[x].y);
+
 			end
 
 		end
@@ -24,11 +43,11 @@ local function updateDetector(tProt)
 	tProt.detector = {};
 
 	--calculate the poly
-	local oLastPoint = tProt.vertices[#tProt.vertices];
+	local oLastPoint = tProt.vertices[tProt.verticesCount];
 	local nLastX = oLastPoint.x;
 	local nLastY = oLastPoint.y;
 
-	for x = 1, #tProt.vertices do
+	for x = 1, tProt.verticesCount do
 		local oPoint = tProt.vertices[x];
 		local nX = oPoint.x;
 		local nY = oPoint.y;
@@ -45,21 +64,57 @@ local function updateDetector(tProt)
 
 end
 
-local function updateCentroid(tProt)
-	tProt.centroid 	= point();
-	local nSumX 	= 0;
-	local nSumY		= 0;
-	local nVertices = #tProt.vertices;
+local function updateAnchors(tProt)
+	local nSumX 				= 0;
+	local nSumY					= 0;
+	local tVertices 			= tProt.vertices;
+	local nVertices 			= tProt.verticesCount;
+	local oAnchorTopLeft 		= tProt.anchors[SHAPE_ANCHOR_TOP_LEFT];
+	local oAnchorTopRight		= tProt.anchors[SHAPE_ANCHOR_TOP_RIGHT];
+	local oAnchorBottomRight 	= tProt.anchors[SHAPE_ANCHOR_BOTTOM_RIGHT];
+	local oAnchorBottomLeft 	= tProt.anchors[SHAPE_ANCHOR_BOTTOM_LEFT];
+
+	--prep the 'corner' anchor points
+	local oPoint1 = tVertices[1];
+
+	--top left
+	oAnchorTopLeft.x = oPoint1.x;
+	oAnchorTopLeft.y = oPoint1.y;
+	--top right
+	oAnchorTopRight.x = oPoint1.x;
+	oAnchorTopRight.y = oPoint1.y;
+	--bottom right
+	oAnchorBottomRight.x = oPoint1.x;
+	oAnchorBottomRight.y = oPoint1.y;
+	--bottom left
+	oAnchorBottomLeft.x = oPoint1.x;
+	oAnchorBottomLeft.y = oPoint1.y;
 
 	for x = 1, nVertices do
-		--print(tProt.vertices[x])
-		local oPoint = tProt.vertices[x];
+		--process data for the centroid
+		local oPoint = tVertices[x];
 		nSumX = nSumX + oPoint.x;
 		nSumY = nSumY + oPoint.y;
+
+		--update the 'corner' anchor points
+
+		--top left
+		oAnchorTopLeft.x = oPoint.x < oAnchorTopLeft.x and oPoint.x or oAnchorTopLeft.x;
+		oAnchorTopLeft.y = oPoint.y < oAnchorTopLeft.y and oPoint.y or oAnchorTopLeft.y;
+		--top right
+		oAnchorTopRight.x = oPoint.x > oAnchorTopRight.x and oPoint.x or oAnchorTopRight.x;
+		oAnchorTopRight.y = oPoint.y < oAnchorTopRight.y and oPoint.y or oAnchorTopRight.y;
+		--bottom right
+		oAnchorBottomRight.x = oPoint.x > oAnchorBottomRight.x and oPoint.x or oAnchorBottomRight.x;
+		oAnchorBottomRight.y = oPoint.y > oAnchorBottomRight.y and oPoint.y or oAnchorBottomRight.y;
+		--bottom left
+		oAnchorBottomLeft.x = oPoint.x < oAnchorBottomLeft.x and oPoint.x or oAnchorBottomLeft.x;
+		oAnchorBottomLeft.y = oPoint.y > oAnchorBottomLeft.y and oPoint.y or oAnchorBottomLeft.y;
 	end
 
-	tProt.centroid.x = nSumX / nVertices;
-	tProt.centroid.y = nSumY / nVertices;
+	--update the centroid anchor
+	tProt.anchors[SHAPE_ANCHOR_CENTROID].x = nSumX / nVertices;--tProt.centroid.x;
+	tProt.anchors[SHAPE_ANCHOR_CENTROID].y = nSumY / nVertices;--tProt.centroid.y;
 end
 
 
@@ -81,14 +136,24 @@ end
 local function updatePerimeterAndEdges(tProt)
 	local nSum 				= 0;
 	local tVertices 		= tProt.vertices;
-	local nVerticesCount 	= #tVertices;
-	tProt.edges 			= {};
+	local nVerticesCount 	= tProt.verticesCount;
+
+	if (tProt.edges[nVerticesCount] == nil) then
+		tProt.edges	= {};
+
+		for x = 1, nVerticesCount do
+			tProt.edges[x] = line(nil, nil, true);
+		end
+
+	end
 
 	for i = 1, nVerticesCount do
 		local oPoint1 = tVertices[i];
 		local oPoint2 = i < nVerticesCount and tVertices[i + 1] or tVertices[1];
-		tProt.edges[i] = math.sqrt( (oPoint1.x - oPoint2.x)^2 + (oPoint1.y - oPoint2.y)^2 );
-		nSum = nSum + tProt.edges[i];
+		tProt.edges[i]:setStart(oPoint1, true);
+		tProt.edges[i]:setEnd(oPoint2);
+		-- = 0;--math.sqrt( (oPoint1.x - oPoint2.x)^2 + (oPoint1.y - oPoint2.y)^2 );
+		nSum = nSum + tProt.edges[i]:getLength();
 	end
 
 	tProt.perimeter = nSum;
@@ -124,41 +189,43 @@ local polygon = class "polygon" : extends(shape) {
 		local tProt = tProtectedRepo[this];
 
 		--import (or setup) the protected fields
-		tProt.perimeter	= rawtype(tProt.perimeter) 	== "number" and tProt.perimeter 	or 0;
-		--print(rawtype(tProt.vertices))
-		tProt.vertices	= rawtype(tProt.vertices)	== "table" 	and tProt.vertices 		or {};
-		tProt.edges		= rawtype(tProt.edges)		== "table" 	and tProt.edges 		or {};
-		tProt.area 		= rawtype(tProt.area) 		== "number" and tProt.area 			or 0;
+		tProt.perimeter				= rawtype(tProt.perimeter) 		== "number" and tProt.perimeter 		or 0;
+		tProt.vertices				= rawtype(tProt.vertices)		== "table" 	and tProt.vertices 			or {};
+		tProt.edges					= rawtype(tProt.edges)			== "table" 	and tProt.edges 			or {};
+		tProt.area 					= rawtype(tProt.area) 			== "number" and tProt.area 				or 0;
+		--this can be be set to a vertex ID or one of the shape anchor constants
+		tProt.anchorIndex 			= rawtype(tProt.anchorIndex) 	== "number" and tProt.anchorIndex		or SHAPE_ANCHOR_DEFAULT;
+
+		--setup the anchor points
+		tProt.anchors	=  {
+			[SHAPE_ANCHOR_TOP_LEFT] 	= point(),
+			[SHAPE_ANCHOR_TOP_RIGHT]	= point(),
+			[SHAPE_ANCHOR_BOTTOM_RIGHT]	= point(),
+			[SHAPE_ANCHOR_BOTTOM_LEFT]	= point(),
+			[SHAPE_ANCHOR_CENTROID]		= point(),
+		}
 
 		--setup the protected methods
 		tProt.importVertices			= importVertices;
 		tProt.updateArea				= updateArea;
-		tProt.updateCentroid 			= updateCentroid;
+		tProt.updateAnchors 			= updateAnchors;
 		tProt.updateDetector 			= updateDetector;
 		tProt.updatePerimeterAndEdges 	= updatePerimeterAndEdges;
-
-		--print("a:s "..tostring(rawtype(this.updateVertices)))
-		--indicate whether or not this polygon should recalculate its vertices during update
-		--this.doUpdateVertices = rawtype(this.updateVertices) == "function";
 
 		--import the vertices (if present)
 		if (rawtype(tVertices) == "table") then
 			tProt:importVertices(tVertices);
 		end
 
-		--creates mock edge lengths until the next update
-		--for x = 1, #tProt.vertices do
-			--tProt.edges[x] = 0;
-		--end
-
 		--update the polygon (if not skipped)
 		if (not bSkipUpdate) then
 			tProt:updatePerimeterAndEdges();
 			tProt:updateDetector();
-			tProt:updateCentroid();
+			tProt:updateAnchors();
 			tProt:updateArea();
 		end
 
+		tProt.verticesCount = #tProt.vertices;
 	end,
 
 	__tostring = function(this)
@@ -229,6 +296,19 @@ local polygon = class "polygon" : extends(shape) {
 
 		return bInside;
 	end,
+--TODO should these return a copy of the point?
+	getPos = function(this)
+		local tProt	= tProtectedRepo[this];
+		local oRet;
+
+		if (tProt.vertices[tProt.anchorIndex] ~= nil) then
+			oRet = tProt.vertices[tProt.anchorIndex];
+		elseif (tProt.anchors[tProt.anchorIndex] ~= nil) then
+			oRet = tProt.anchors[tProt.anchorIndex];
+		end
+
+		return oRet;
+	end,
 
 	intersects = function(this, oOther)
 		return false;
@@ -250,16 +330,65 @@ local polygon = class "polygon" : extends(shape) {
 		return false;
 	end,
 
+	getAnchorIndex = function(this)
+		return tProtectedRepo[this].anchorIndex;
+	end,
+
 	getArea = function(this)
 		return tProtectedRepo[this].area;
 	end,
-
+	--TODO should these return a copy of the point?
 	getCentroid = function(this)
-		return tProtectedRepo[this].centroid;
+		return tProtectedRepo[this].anchors[SHAPE_ANCHOR_CENTROID];
 	end,
 
+	getEdge = function(this, nIndex)
+		return tProtectedRepo[this].edges[nIndex] or nil;
+	end,
+
+--TODO should these return a copy of the point?
 	getVertex = function(this, nIndex)
 		return tProtectedRepo[this].vertices[nIndex];
+	end,
+
+	setAnchorIndex = function(this, nIndex)
+		local tProt	= tProtectedRepo[this];
+
+		if (tProt.vertices[nIndex] ~= nil or tProt.anchors[nIndex] ~= nil) then
+			tProt.anchorIndex = nIndex;
+		end
+
+		return this;
+	end,
+
+
+	setPos = function(this, nX, nY)
+		local tProt	= tProtectedRepo[this];
+		local oPivot;
+		local nXDelta;
+		local nYDelta;
+
+		if (tProt.vertices[tProt.anchorIndex] ~= nil) then
+			oPivot = tProt.vertices[tProt.anchorIndex];
+		elseif (tProt.anchors[tProt.anchorIndex] ~= nil) then
+			oPivot = tProt.anchors[tProt.anchorIndex];
+		end
+
+		--get the delta values
+		nXDelta = nX - oPivot.x;
+		nYDelta = nY - oPivot.y;
+
+		--shift the vertices by the delta values
+		for x = 1, tProt.verticesCount do
+			local oPoint = tProt.vertices[x];
+			oPoint.x = oPoint.x + nXDelta;
+			oPoint.y = oPoint.y + nYDelta;
+		end
+
+		--update the centroid and anchors
+		updateAnchors(tProt);
+
+		return this;
 	end,
 
 	setVertex = function(this, nIndex, oPoint)
@@ -270,7 +399,7 @@ local polygon = class "polygon" : extends(shape) {
 			tProt.vertices[nIndex].y = oPoint.y;
 			tProt:updatePerimeterAndEdges();
 			tProt:updateDetector();
-			tProt:updateCentroid();
+			tProt:updateAnchors();
 			tProt:updateArea();
 		end
 
@@ -278,7 +407,7 @@ local polygon = class "polygon" : extends(shape) {
 
 	setVertices = function(this, tPoints)
 		local tProt = tProtectedRepo[this];
-		tProt:importVertices(tPoints, #tProt.vertices);
+		tProt:importVertices(tPoints, tProt.verticesCount);
 	end,
 };
 
