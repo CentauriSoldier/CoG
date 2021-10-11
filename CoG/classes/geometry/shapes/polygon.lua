@@ -119,7 +119,6 @@ local function updateAnchors(tProt)
 	tProt.anchors[SHAPE_ANCHOR_CENTROID].y = nSumY / nVertices;--tProt.centroid.y;
 end
 
-
 local function updateArea(tProt)--this algorithm doesn't work on complex polygons, find one which does and check before returning the area
 	local nSum = 0;
 	local tVertices = tProt.vertices;
@@ -132,7 +131,9 @@ local function updateArea(tProt)--this algorithm doesn't work on complex polygon
 		nSum = nSum + (oPoint1.x * oPoint2.y - oPoint1.y * oPoint2.x)
 	end
 
-	tProt.area = math.abs(nSum / 2);
+	tProt.area = nSum / 2;
+	--make sure it's a positive number (since the loop goes clockwise instead of CCW)
+	tProt.area = tProt.area >= 0 and tProt.area or -tProt.area;
 end
 
 local function updatePerimeterAndEdges(tProt)
