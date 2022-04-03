@@ -1,5 +1,5 @@
 --credits https://www.redblobgames.com/grids/hexagons/
---TODO create flat hex and pionty hex subclasses
+--TODO create flat hex and pointy hex subclasses
 
 --localization
 local assert 		= assert;

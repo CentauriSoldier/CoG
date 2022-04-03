@@ -1,5 +1,14 @@
 local tProtectedRepo = {};
 
+local QUADRANT_I 		= QUADRANT_I;
+local QUADRANT_II 		= QUADRANT_II
+local QUADRANT_III		= QUADRANT_III;
+local QUADRANT_IV 		= QUADRANT_IV;
+local QUADRANT_O		= QUADRANT_O;
+local QUADRANT_X		= QUADRANT_X;
+local QUADRANT_X_NEG 	= QUADRANT_X_NEG;
+local QUADRANT_Y		= QUADRANT_Y;
+local QUADRANT_Y_NEG	= QUADRANT_Y_NEG;
 local SHAPE_ANCHOR_COUNT		= SHAPE_ANCHOR_COUNT;
 local SHAPE_ANCHOR_TOP_LEFT 	= SHAPE_ANCHOR_TOP_LEFT;
 local SHAPE_ANCHOR_TOP_RIGHT 	= SHAPE_ANCHOR_TOP_RIGHT;
@@ -20,25 +29,55 @@ local tostring 					= tostring;
 local type 						= type;
 
 
+local SIDE_TRIANGLE_DIFFERENTIAL 		= 3;
+local SIDE_ANGLE_FACTOR_DIFFERENTIAL	= 2;
+local SUM_OF_EXTERIOR_ANGLES			= 360;
+--[[
+list of protected properties
+area
+anchorPoint
+anchors
+detector
+edges 		-
+exteriorAngles
+interiorAngles
+perimeter
+sumOfInteriorAngles
+vertices 	-
+verticesCount
+x
+y
+
+list of protected methods
+updatePerimeterAndEdges
+updateDetector
+updateAnchors
+updateArea
+updateAngles
+
+]]
+
 local function importVertices(tProt, tVertices, nMax)
 	nMax = rawtype(nMax) == "number" and nMax or #tVertices;
 
-		if (nMax > 0) then
-		tProt.vertices 		= {};
-		tProt.verticesCount = 0;
+	tProt.vertices 		= {};
+	tProt.verticesCount = 0;
 
-		for x = 1, nMax do
+	for x = 1, nMax do
 
-			if (type(tVertices[x]) == "point") then
-				tProt.verticesCount	= tProt.verticesCount + 1;
-				tProt.vertices[tProt.verticesCount + 1] = point(tVertices[x].x, tVertices[x].y);
-
-			end
+		if (type(tVertices[x]) == "point") then
+			tProt.verticesCount	= tProt.verticesCount + 1;
+			tProt.vertices[tProt.verticesCount + 1] = point(tVertices[x].x, tVertices[x].y);
 
 		end
 
 	end
 
+	if (tProt.verticesCount < 3) then
+		error("Cannot create polygon; must have 3 or more sides; given only "..tProt.verticesCount.." vertices.");
+	end
+
+	tProt.sumOfInteriorAngles = (tProt.verticesCount - 2) * 180;
 end
 
 local function updateDetector(tProt)
@@ -162,13 +201,39 @@ local function updatePerimeterAndEdges(tProt)
 	tProt.perimeter = nSum;
 end
 
+--updates all the interior and exterior angles of the shape (going clockwise)
+local function updateAngles(tProt)
+	tProt.interiorAngles 	= {};
+	tProt.exteriorAngles 	= {};
+	local tEdges 			= tProt.edges;
+
+	for nLine = 1, tProt.verticesCount do --use the number of vertices since it is the same as the number of edges
+
+		--determine the lines between which the angle will be
+		local oLine1 = tEdges[nLine];
+		local oLine2 = tEdges[(nLine ~= tProt.verticesCount) and (nLine + 1) or 1];
+
+		--determine the second theta by flipping the second line so it's oriented correctly
+		local nTheta1 = oLine1:getTheta();
+		local nTheta2 = oLine2:getTheta()
+		nTheta2 = (nTheta2 >= 180) and nTheta2 - 180 or nTheta2 + 180;
+
+		--get the interior angle
+		tProt.interiorAngles[nLine] = math.max(nTheta1, nTheta2) - math.min(nTheta1, nTheta2);
+
+		--get the exterior angle: this allows for negative interior angles so all extangles == 360 even on concave polygons
+		tProt.exteriorAngles[nLine] = 180 - tProt.interiorAngles[nLine];
+	end
+
+end
+
 --[[!
 	@mod polygon
 	@func polygon
 	@desc Used for creating various polygons and handling point
 	detection and detector properties. The child class is responsible
 	for creating vertices (upon construction) and storing them
-	in the public property of 'vertices' (a numerically-indexed
+	in the protected property of 'vertices' (a numerically-indexed
 	table whose values are points). The child class is also
 	responsible for updating the polygon whenever changes are
 	made to size or position. This is done by calling super:update().
@@ -221,6 +286,7 @@ local polygon = class "polygon" : extends(shape) {
 		tProt.updateAnchors 			= updateAnchors;
 		tProt.updateDetector 			= updateDetector;
 		tProt.updatePerimeterAndEdges 	= updatePerimeterAndEdges;
+		tProt.updateAngles 				= updateAngles;
 
 		--import the vertices (if present)
 		if (rawtype(tVertices) == "table") then
@@ -233,6 +299,7 @@ local polygon = class "polygon" : extends(shape) {
 			tProt:updateDetector();
 			tProt:updateAnchors();
 			tProt:updateArea();
+			tProt:updateAngles();
 		end
 
 		tProt.verticesCount = #tProt.vertices;
@@ -282,7 +349,6 @@ local polygon = class "polygon" : extends(shape) {
 		return bInside;
 	end,
 
-
 	containsPoint 	= function(this, oPoint)
 		local tProt 	= tProtectedRepo[this];
 		local tDetector = tProt.detector;
@@ -311,6 +377,15 @@ local polygon = class "polygon" : extends(shape) {
 		error("COMPLETE THIS")
 	end,
 
+	getSumofExteriorAngles = function()
+		return SUM_OF_EXTERIOR_ANGLES;
+	end,
+
+	--gets the sum of all interior angles
+	getSumofInteriorAngles = function(this)
+		return tProtectedRepo[this].sumOfInteriorAngles;
+	end,
+
 --TODO should these return a copy of the point?
 	getPos = function(this)
 		local tProt	= tProtectedRepo[this];
@@ -325,15 +400,23 @@ local polygon = class "polygon" : extends(shape) {
 		return oRet;
 	end,
 
+	getInteriorAngle = function(this, nVertex)
+		return tProtectedRepo[this].interiorAngles[nVertex] or nil;
+	end,
+
+	getExteriorAngle = function(this, nVertex)
+		return tProtectedRepo[this].exteriorAngles[nVertex] or nil;
+	end,
+
 	intersects = function(this, oOther)
 		return false;
 	end,
 
-	isConcave = function(this)
+	isConcave = function(this)--at least one angle that is greater than 180 degrees
 		return false;
 	end,
 
-	isConvex = function(this)
+	isConvex = function(this)--no angle greater than 180 degrees
 		return not this:isConcave();
 	end,
 
@@ -341,8 +424,28 @@ local polygon = class "polygon" : extends(shape) {
 		return false;
 	end,
 
+	isIrregular = function(this, oOther)
+		return not this:isRegular(oOther);
+	end,
+
 	isRegular = function(this)--when all sides are equal and all angles are equal
-		return false;
+		local bRet 			= true;
+		local tProt			= tProtectedRepo[this];
+
+		local nLastEdgeLength = tProt.edges[1].length;
+
+		for x = 2, #tProt.edges do
+			local nEdgeLength = tProt.edges[x].length;
+
+			if (nEdgeLength ~= nLastEdgeLength) then
+				bRet = false;
+				break;
+			end
+
+			nLastEdgeLength = nEdgeLength;
+		end
+
+		return bRet;
 	end,
 
 	getAnchorIndex = function(this)
@@ -360,7 +463,7 @@ local polygon = class "polygon" : extends(shape) {
 	getEdge = function(this, nIndex)
 		return tProtectedRepo[this].edges[nIndex] or nil;
 	end,
-	--TODO return a copy
+	--TODO return a copy (yes, because edges cannot be properly modified by the client; they must use the vertices)
 	getEdges = function(this)
 		return tProtectedRepo[this].edges or nil;
 	end,
@@ -373,7 +476,7 @@ local polygon = class "polygon" : extends(shape) {
 	serialize = function(this)
 		return serialize.table(tProtectedRepo[this]);
 	end,
-
+	--TODO should this auto-update position or at least have an optional arg for that?
 	setAnchorIndex = function(this, nIndex)
 		local tProt	= tProtectedRepo[this];
 
@@ -424,13 +527,16 @@ local polygon = class "polygon" : extends(shape) {
 			tProt:updateDetector();
 			tProt:updateAnchors();
 			tProt:updateArea();
+			tProt:updateAngles();
 		end
 
 	end,
 
+	--TODO should each subclass be forced to set a minimum limit for the vertices so that a fewer-than-expected-input will throw an error.
 	setVertices = function(this, tPoints)
 		local tProt = tProtectedRepo[this];
 		tProt:importVertices(tPoints, tProt.verticesCount);
+		--TODO doesn't this need updated here?
 	end,
 };
 

@@ -2,7 +2,7 @@
 @authors Centauri Soldier
 @copyright Public Domain
 @description
-	<h2>triangle</h2>
+	<h2>line</h2>
 	<p></p>
 @license <p>The Unlicense<br>
 <br>
@@ -32,7 +32,11 @@ local point 		= point;
 local rawtype		= rawtype;
 local serialize		= serialize;
 local type 			= type;
+local MATH_ARL		= MATH_ARL;
 local MATH_UNDEF	= MATH_UNDEF;
+
+--a location for storing temporary points so they don't need to be created every calcualtion
+local tTempPoints = {};
 
 local tProtectedRepo = {};
 
@@ -48,14 +52,60 @@ local function update(this)
 	local nXDelta = tProt.stop.x - tProt.start.x;
 	tProt.slopeIsUndefined = nXDelta == 0;
 
+	--get the quadrant addative for theta
+	local nXIsPos	= nXDelta > 0;
+	local nYIsPos	= nYDelta > 0;
+
+	--defaults to quadrant I
+	local nQuadrantAddative = 0;
+
+	if (not nXIsPos and nYIsPos) then
+		nQuadrantAddative = 90;
+	elseif (not nXIsPos and not nYIsPos) then
+		nQuadrantAddative = 180;
+	elseif (nXIsPos and not nYIsPos) then
+		nQuadrantAddative = 270;
+	end
+
+	--determine slope and y-intercept
 	if (tProt.slopeIsUndefined) then
 		tProt.slope 		= MATH_UNDEF;
-		tProt.theta 		= 90;
-		tProt.yIntercept 	= MATH_UNDEF;
+		tProt.yIntercept 	= tProt.start.x == 0 and MATH_ARL or MATH_UNDEF;
 	else
 		tProt.slope 		= nYDelta / nXDelta;
-		tProt.theta 		= math.deg(math.atan(tProt.slope));
 		tProt.yIntercept 	= tProt.start.y - tProt.slope * tProt.start.x;
+	end
+
+	--translate end point to the origin (using the object's temp point) in order to find theta
+	local oEnd = tTempPoints[this];
+	local tStart = {
+		x = 0,
+		y = 0,
+	};--TODO this doesn't seem to account for the quadrant...rethink this
+	oEnd.x = tProt.stop.x - tProt.start.x;
+	oEnd.y = tProt.stop.y - tProt.start.y;
+
+	--get the end point's relative location
+	local bQuad = oEnd:getQuadrant();
+
+	if (bQuad == QUADRANT_I) then
+		tProt.theta	= math.deg(math.atan(nXDelta / nYDelta));
+	elseif (bQuad == QUADRANT_II) then
+		tProt.theta	= math.deg(math.atan(nXDelta / nYDelta)) + 90;
+	elseif (bQuad == QUADRANT_III) then
+		tProt.theta	= math.deg(math.atan(nXDelta / nYDelta)) + 180;
+	elseif (bQuad == QUADRANT_IV) then
+		tProt.theta	= math.deg(math.atan(nXDelta / nYDelta)) + 270;
+	elseif (bQuad == QUADRANT_X) then
+		tProt.theta	= 0;
+	elseif (bQuad == QUADRANT_Y) then
+		tProt.theta	= 90;
+	elseif (bQuad == QUADRANT_X_NEG) then
+		tProt.theta	= 180;
+	elseif (bQuad == QUADRANT_Y_NEG) then
+		tProt.theta	= 270;
+	elseif (bQuad == QUADRANT_O) then
+		tProt.theta	= 0; --TODO is this undefined?
 	end
 
 	--get the standard-form components and set the x intercept
@@ -63,10 +113,9 @@ local function update(this)
 	tProt.b = tProt.start.x - tProt.stop.x;
 	tProt.c = tProt.a * tProt.start.x + tProt.b * tProt.start.y;
 
-	--TODO left off here...need to account properly for undefined slope
-	--https://findanyanswer.com/how-do-you-find-the-y-intercept-if-the-slope-is-undefined
 	--y = mx + b => 0 = mx + b => -b = mx => x = -b/m
 	tProt.xIntercept = tProt.slopeIsUndefined and tProt.start.x or (tProt.slope == 0 and MATH_UNDEF or -tProt.yIntercept / tProt.slope);
+
 
 	--update whether or not the intercepts are defined
 	tProt.xInterceptIsUndefined = rawtype(tProt.xIntercept) == "string";
@@ -97,7 +146,6 @@ return class "line" {
 		tProt.deltaX 				= 0;
 		tProt.deltaY 				= 0;
 		tProt.length 				= 0;
-		tProt.perimter 				= 0;
 		tProt.slope 				= 0;
 		tProt.slopeIsUndefined 		= true;
 		tProt.theta 				= 0;
@@ -106,6 +154,9 @@ return class "line" {
 		tProt.xIntercept 			= 0;
 		tProt.xInterceptIsUndefined = true;
 		--tProt. = 0;
+
+		--create this line's temp point (used during updates)
+		tTempPoints[this] = point(0, 0);
 
 		if (not bSkipUpdate) then
 			update(this);
@@ -168,13 +219,13 @@ return class "line" {
 	end,
 
 
-	--TODO finish this!
-	getObtuseAngleTo = function(this, oOther)
+	--TODO finish this! Check if it's accurate
+	--[[getObtuseAngleTo = function(this, oOther)
 		local tMe 		= tProtectedRepo[this];
 		local tOther 	= tProtectedRepo[oOther];
 
 		local nAngle = math.abs(tMe.theta - tOther.theta);
-		return nAngle > 90 and nAngle or 180 - nAngle;
+		return nAngle <= 90 and nAngle or 90 + nAngle;
 	end,
 
 
@@ -184,8 +235,7 @@ return class "line" {
 
 		local nAngle = math.abs(tMe.theta - tOther.theta);
 		return nAngle < 90 and nAngle or 180 - nAngle;
-	end,
-
+	end,]]
 
 	getDeltaX = function(this)
 		return tProtectedRepo[this].deltaX;
@@ -197,7 +247,7 @@ return class "line" {
 	end,
 
 
-	getDistance = function(this)
+	getDistance = function(this)--TODO do I need this function, is seems redundant and confusing
 		return tProtectedRepo[this].length;
 	end,
 
@@ -215,6 +265,36 @@ return class "line" {
 		return tProtectedRepo[this].midpoint;
 	end,
 
+	getPointOfIntersection = function(this, oOther)
+		local tMe 		= tProtectedRepo[this];
+		local tOther 	= tProtectedRepo[oOther];
+		local oRet		= MATH_UNDEF;
+
+		local A1 = tMe.stop.y - tMe.start.y;
+		local B1 = tMe.start.x - tMe.stop.x;
+		local C1 = A1 * tMe.start.x + B1 * tMe.start.y;
+
+		local A2 = tOther.stop.y - tOther.start.y;
+		local B2 = tOther.start.x - tOther.stop.x;
+		local C2 = A2 * tOther.start.x + B2 * tOther.start.y;
+
+		local nDeterminate = (A1 * B2 - A2 * B1);
+
+		if (nDeterminate ~= 0) then
+			local x = (B2 * C1 - B1 * C2) / nDeterminate;
+			local y = (A1 * C2 - A2 * C1) / nDeterminate;
+
+			oRet = point(x, y);
+		end
+
+		return oRet;
+	end,
+
+	--get the polar radius
+	getR = function(this)
+		return tProtectedRepo[this].length;
+	end,
+
 	getSlope = function(this)
 		return tProtectedRepo[this].slope;
 	end,
@@ -224,7 +304,7 @@ return class "line" {
 		return tProtectedRepo[this].start;
 	end,
 
-
+	--get the polar angles from the x-axis
 	getTheta = function(this)
 		return tProtectedRepo[this].theta;
 	end,
@@ -249,32 +329,6 @@ return class "line" {
 		local B2 = tOther.start.x - tOther.stop.x;
 
 		return (A1 * B2 - A2 * B1) ~= 0;
-	end,
-
-
-	intersectsAt = function(this, oOther)
-		local tMe 		= tProtectedRepo[this];
-		local tOther 	= tProtectedRepo[oOther];
-		local oRet		= MATH_UNDEF;
-
-		local A1 = tMe.stop.y - tMe.start.y;
-		local B1 = tMe.start.x - tMe.stop.x;
-		local C1 = A1 * tMe.start.x + B1 * tMe.start.y;
-
-		local A2 = tOther.stop.y - tOther.start.y;
-		local B2 = tOther.start.x - tOther.stop.x;
-		local C2 = A2 * tOther.start.x + B2 * tOther.start.y;
-
-		local nDeterminate = (A1 * B2 - A2 * B1);
-
-		if (nDeterminate ~= 0) then
-			local x = (B2 * C1 - B1 * C2) / nDeterminate;
-			local y = (A1 * C2 - A2 * C1) / nDeterminate;
-
-			oRet = point(x, y);
-		end
-
-		return oRet;
 	end,
 
 	isDistinctFrom = function(this, oOther)

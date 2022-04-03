@@ -85,6 +85,7 @@ return class "rectangle" : extends(polygon) {
 		tProt:updateAnchors();
 		tProt:updatePerimeterAndEdges();
 		tProt:updateArea();
+		tProt:updateAngles();
 	end,
 
 

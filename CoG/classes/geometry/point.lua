@@ -23,6 +23,15 @@
 </ul>
 @website https://github.com/CentauriSoldier
 *]]
+constant("QUADRANT_I", 		"I");
+constant("QUADRANT_II", 	"II");
+constant("QUADRANT_III", 	"III");
+constant("QUADRANT_IV",		"IV");
+constant("QUADRANT_O", 		"O");
+constant("QUADRANT_X",		"X");
+constant("QUADRANT_X_NEG",	"-X");
+constant("QUADRANT_Y", 		"Y");
+constant("QUADRANT_Y_NEG",	"-Y");
 
 --localization
 local class 		= class;
@@ -126,6 +135,48 @@ local point = class "point" {
 		return this;
 	end,
 
+	--return O, X, Y, -X, -Y, I, II, III or IV
+	getQuadrant = function(this)
+		local sRet 		= "ERROR";
+		local bYIsNeg 	= this.y < 0;
+		local bYIs0 	= this.y == 0;
+		local bYIsPos 	= not bYIsNeg and not bYIs0;
+
+		if (this.x < 0) then
+
+			if (bYIsNeg) then
+				sRet = "III";
+			elseif (bYIs0) then
+				sRet = "-X";
+			elseif (bYIsPos) then
+				sRet = "II";
+			end
+
+		elseif (this.x == 0) then
+
+			if (bYIsNeg) then
+				sRet = "-Y";
+			elseif (bYIs0) then
+				sRet = "O";
+			elseif (bYIsPos) then
+				sRet = "Y";
+			end
+
+		elseif (this.x > 0) then
+
+			if (bYIsNeg) then
+				sRet = "IV";
+			elseif (bYIs0) then
+				sRet = "X";
+			elseif (bYIsPos) then
+				sRet = "I";
+			end
+
+		end
+
+		return sRet;
+	end,
+
 	--[[deprecated...this is a line function
 	distanceTo = function(this, oOther)
 		local nRet = 0;
@@ -137,7 +188,7 @@ local point = class "point" {
 		return nRet;
 	end,
 	]]
-	
+
 	--[[!
 		@desc Serializes the object's data.
 		@func point.serialize
