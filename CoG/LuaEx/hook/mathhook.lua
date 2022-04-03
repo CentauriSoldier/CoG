@@ -1,3 +1,4 @@
+local math = math;
 --local constant = _G.__LUAEX__.constant;
 constant("MATH_ARL", 	"all real numbers");
 constant("MATH_INF", 	"infinite");
@@ -158,3 +159,5 @@ function math.longtorgb(nValue)
 		b = nBlue,
 	};
 end
+
+return math;
