@@ -10,10 +10,14 @@ local r = rectangle(point(0, 0), 25, 20);
 --local l = line(point(0, 40), point(0, 200));
 --p(l:getTheta());
 --p(r:getInteriorAngle(4))
-local po = pot(1, 100, 1, 1, POT_CONTINUITY_ALT);
 
-for x = 1, 100 do
-	--p(po:getPos())
-	po:decrease();
-	p(po:getPos())
-end
+enum("TARGET", {"ORC", "ELF", "GNOME", "HUMAN", "DRAGON", "FLYING", "GROUND", "GROUND"});
+
+--tTargetors, tTargets, tImmunities, tRequirements, tProrities, tThreats
+
+orc 	= targetor({TARGET.ORC, TARGET.GROUND},		{TARGET.GROUND, TARGET.FLYING, TARGET.HUMAN}, 	nil, 			nil, 				{TARGET.ELF}, 	nil);
+orc = orc * TARGET.DRAGON
+orc = orc / TARGET.DRAGON
+dragon	= targetor({TARGET.DRAGON}, 				{TARGET.GROUND, TARGET.FLYING}, 				nil, 			{TARGET.FLYING}, 	{TARGET.ORC}, 	{TARGET.ORC});
+--elf 	= targetor({ELF, GROUND}, 		{GROUND}, 			{DRAGON}, 	nil, 		nil, 	{ORC});
+p(orc > dragon);

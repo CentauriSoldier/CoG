@@ -190,11 +190,11 @@ pot 		= import(rClassesComponent..".pot");
 protean 	= import(rClassesComponent..".protean");
 
 --classes (other)
---action 	= import(rClasses.."action");
---bank 		= import(rClasses.."bank");
---combator 	= import(rClasses.."combator");
+--action 	= import(rClasses..".action");
+--bank 		= import(rClasses..".bank");
+--combator 	= import(rClasses..".combator");
 iota 		= import(rClasses..".iota");
---targetor	= import(rClasses.."targetor");
-aStar		= import(rClasses..".aStar");
+targetor	= import(rClasses..".targetor");
+--aStar		= import(rClasses..".aStar");
 --useful if using CoG as a dependency in multiple modules to prevent the need for loading multilple times
-COG_INIT = true;
+constant("COG_INIT", true);
