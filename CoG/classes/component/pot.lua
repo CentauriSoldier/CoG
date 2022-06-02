@@ -73,7 +73,7 @@ local math 						= math;
 
 
 local function continuityIsValid(nVal)
-	print("printing the local value of POT_CONTINUITY_NONE: "..POT_CONTINUITY_NONE)
+
 	return rawtype(nVal) == "number" and
 		   (nVal == POT_CONTINUITY_NONE 	or
 		    nVal == POT_CONTINUITY_REVOLVE 	or
