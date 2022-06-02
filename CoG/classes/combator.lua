@@ -54,7 +54,7 @@ class "combator" {
 	@scope local
 	@desc The constructor for the combator class.
 	!]]
-	__construct = function(this)
+	__construct = function(this, tProt)
 
 		tCombator[this] = {
 			dot			= {

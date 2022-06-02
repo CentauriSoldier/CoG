@@ -74,7 +74,7 @@ end
 
 class "targetor" {
 
-	__construct = function(...)
+	__construct = function(this, tProt, ...)
 		local this = select(1, ...);
 
 		tTargetors[this] = {
