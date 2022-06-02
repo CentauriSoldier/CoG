@@ -207,16 +207,21 @@ local function updateAngles(tProt)
 	tProt.exteriorAngles 	= {};
 	local tEdges 			= tProt.edges;
 
-	for nLine = 1, tProt.verticesCount do --use the number of vertices since it is the same as the number of edges
+	for nLine = 1, tProt.verticesCount do --use the number of vertices since it's the same as the number of edges
+		local bIsLastLine = nLine == tProt.verticesCount;
 
 		--determine the lines between which the angle will be
 		local oLine1 = tEdges[nLine];
-		local oLine2 = tEdges[(nLine ~= tProt.verticesCount) and (nLine + 1) or 1];
+		local oLine2 = tEdges[(not bIsLastLine) and (nLine + 1) or 1];
 
-		--determine the second theta by flipping the second line so it's oriented correctly
+		--get the lines' theta value
 		local nTheta1 = oLine1:getTheta();
 		local nTheta2 = oLine2:getTheta()
-		nTheta2 = (nTheta2 >= 180) and nTheta2 - 180 or nTheta2 + 180;
+
+		--if this is the last line, determine the second theta by flipping it so it's oriented correctly
+		if (bIsLastLine) then
+			nTheta2 = (nTheta2 >= 180) and nTheta2 - 180 or nTheta2 + 180;
+		end
 
 		--get the interior angle
 		tProt.interiorAngles[nLine] = math.max(nTheta1, nTheta2) - math.min(nTheta1, nTheta2);
