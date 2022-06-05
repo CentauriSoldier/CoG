@@ -49,6 +49,12 @@ For more information, please refer to <http://unlicense.org/>
 @versionhistory
 <ul>
 	<li>
+		<b>0.6</b>
+		<br>
+		<p>Bugfix: set and stack classes were not modifying values properly.</p>
+		<p>Feature: added infusedhelp module.</p>
+	</li>
+	<li>
 		<b>0.5</b>
 		<br>
 		<p>Change: classes are no longer automatically added to the global scope when created; rather, they are returned for the calling scipt to handle.</p>
@@ -161,7 +167,7 @@ math 		= require("hook.mathhook");
 string		= require("hook.stringhook");
 table		= require("hook.tablehook");
 
---import help module
+--import infusedhelp module
 infusedhelp	= require("class.infusedhelp");
 
 --import other modules
