@@ -25,8 +25,8 @@
 </ul>
 @version 0.1
 *]]
-assert(type(const) 		== "function", "const has not been loaded.");
-assert(type(protean)	== "function", "protean has not been loaded.");
+assert(type(constant) 	== "function", "const has not been loaded.");
+assert(type(protean)	== "class", "protean has not been loaded.");
 
 COMBATOR 					= const("COMBATOR", "This is the main combator const category.", true);
 COMBATOR.TO_HIT_MIN			= 0;
