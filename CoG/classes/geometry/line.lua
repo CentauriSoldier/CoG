@@ -88,7 +88,7 @@ local function update(this)
 	tProt.theta = math.deg(math.atan2(oEnd.y, oEnd.x));
 	--make sure the value is positive
 	tProt.theta = tProt.theta >= 0 and tProt.theta or 360 + tProt.theta;
-	
+
 	--get the end point's relative location
 	--local bQuad = oEnd:getQuadrant();
 
@@ -142,8 +142,8 @@ return class "line" {
 		local tProt = tProtectedRepo[this];
 
 		tProt.midpoint  = point();
-		tProt.start = type(oStartPoint) == "point" 	and point(oStartPoint.x, oStartPoint.y) or point();
-		tProt.stop 	= type(oEndPoint)	== "point" 	and point(oEndPoint.x, oEndPoint.y) 	or point();
+		tProt.start = type(oStartPoint) == "point" 	and point(oStartPoint.x, 	oStartPoint.y) 	or point();
+		tProt.stop 	= type(oEndPoint)	== "point" 	and point(oEndPoint.x, 		oEndPoint.y) 	or point();
 
 		--default the fields (in case no update is performed)
 		tProt.a 					= 0;

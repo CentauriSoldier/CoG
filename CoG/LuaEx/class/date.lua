@@ -139,23 +139,23 @@ local date = class "date" {
 		oDate.isLeapYear = oDate.year % tDate.LeapYearFactor == 0;
 	end,
 
-	getDayOfWeek = function(this)
+	getdayofweek = function(this)
 
 	end,
 
-	getDayName = function(this)
+	getdayname = function(this)
 
 	end,
 
-	getWeekName = function(this)
+	getweekname = function(this)
 
 	end,
 
-	getWeekOfMonth = function(this)
+	getweekofmonth = function(this)
 
 	end,
 
-	isLeapYear = function(this)
+	isleapyear = function(this)
 		return tDates[this].isLeapYear;
 	end,
 
@@ -188,13 +188,13 @@ local date = class "date" {
 
 	end,
 
-	setDay = function(this, nDay)
+	setday = function(this, nDay)
 	end,
 
-	setMonth = function(this, nMonth)
+	setmonth = function(this, nMonth)
 	end,
 
-	setYear = function(this, nYear)
+	setyear = function(this, nYear)
 	end,
 };
 

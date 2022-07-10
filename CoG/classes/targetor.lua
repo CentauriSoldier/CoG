@@ -20,39 +20,8 @@ local tTargetors 	= {};
 local tCategoryIdicesByName; 	--used for quick checking existence of a type enum in __add, __sub (each entry will return the order value given the name)
 local tCategoryTypesByName;		-- used for getting a type based on its name
 
---[[
-constant("TARGETABLE",	0); --things I can target
-constant("TARGETOR", 	1);	--things i can be targeted by
-constant("IMMUNITY", 	2);	--things that cannot target me even if they claim to be able to
-constant("PREREQ",		3); --something every targetor must have in order to target me (e.g., RANGED requirement for FLYING targets)
-constant("PRIORITY", 	4); --this is the base prority sorting system; that is, objects will recognize types with lower indices as higher value targets
-constant("THREAT", 		5); --this is the base threat sorting system; that is, objects will recognize types with lower indices as higher threats
-]]
---[[
-local tTypeNames = {
-	[TARGETABLE] 	= "TARGETABLE";
-	[TARGETOR] 		= "TARGETOR";
-	[IMMUNITY] 		= "IMMUNITY";
-	[PREREQ] 		= "PREREQ";
-	[PRIORITY] 		= "PRIORITY";
-	[THREAT] 		= "THREAT";
-};
-
-local TARGETABLE	= TARGETABLE;
-local TARGETOR 		= TARGETOR;
-local IMMUNITY 		= IMMUNITY;
-local PREREQ		= PREREQ;
-local PRIORITY		= PRIORITY;
-local THREAT 		= THREAT;
-]]
-local ADDING 	= "adding";
-local REMOVING 	= "removing";
-
 local type					= type;
 local rawtype				= rawtype;
-local leftOnlyObject 		= leftOnlyObject;
-local rightOnlyObject		= rightOnlyObject;
-local bothObjects			= bothObjects;
 local table_remove			= table.remove;
 local pairs 				= pairs;
 local tostring				= tostring;
