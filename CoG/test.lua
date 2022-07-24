@@ -31,15 +31,29 @@ package.path = package.path..";"..sPath.."\\..\\?.lua;";
 --load LuaEx
 require("init");
 --============= TEST CODE BELOW =============
-local as = aStar();
-local groundConfig = aStar.newLayerConfig("Ground", "AQUIFER", "COMPACTION", "DETRITUS", "FORAGEABILITY", "FORESTATION",
-												"GRADE", "ICINESS", "PALUDALISM", "ROCKINESS", "ROAD", "SNOWINESS",
-												"TEMPERATURE", "TOXICITY", "VERDURE");
+local oAStar = aStar("TEMPERATURE", "AQuIFER", "COMPACTION", "DETRITUS", "FORAGEABILITY", "FORESTATION",
+					"GRADE", "ICINESS", "PALUDALISM", "ROCKINESS", "ROAD", "SNOWINESS",
+					"VERDURE", "TOXICITY");
+local tA = oAStar.aspectNames;
+
+local groundConfig = aStar.newLayerConfig("TERRAIN", {tA.AQUIFER, tA.COMPACTION, tA.DETRITUS});
 --print(type(groundConfig))
-local oWorldMap = as:newMap("World Map", ASTAR_MAP_TYPE_HEX_POINTED, {groundConfig}, 50, 28);
+local oWorldMap = oAStar:newMap("World Map", ASTAR_MAP_TYPE_HEX_POINTED, {groundConfig}, 50, 28);
+local oTerrainLayer = oWorldMap:getLayer("TERRAIN");
+local oNode = oTerrainLayer:getNode(3, 5);
+local oRover1 = oNode:createRover();
+local oRover2 = oNode:createRover();
+--oRover:getAbhoration(tA.AQuIFER):set(PROTEAN_BASE_BONUS, 0.12);
+--print(oRover:setAbhors(tA.AQuIFER, false):toggleAbhors(tA.AQuIFER):abhors(tA.AQuIFER))
+
+oAStar.newPath(oTerrainLayer:getNode(1, 1), oTerrainLayer:getNode(10, 10), oRover1, oRover2)
+
+--local oProt = oWorldMap:getLayer("TERRAIN"):getNode(3, 5):getAspect("AQUIFER"):getImpactor();
+--oProt:set(PROTEAN_ADDATIVE_BONUS, 0.21)
+--print(oWorldMap:getLayer("TERRAIN"):getNode(3, 5):getImpact("AQUIFER"))
 --local tWorldMapLayers = oWorldMap:getLayers();
 
---print(as:getNode("World Map", "Ground", 10, 24):getPassable());
+--print(oAStar:getNode("World Map", "Ground", 10, 24):getPassable());
 
 --for nID, oLayer in pairs(tWorldMapLayers) do
 
