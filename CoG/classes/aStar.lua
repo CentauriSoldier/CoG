@@ -14,17 +14,18 @@ enum("ASTAR_LAYER", 	{"SUBTERRAIN", "SUBMARINE", "MARINE", "TERRAIN", "AIR", "SP
 });
 ]]
 --🅲🅾🅽🆂🆃🅰🅽🆃🆂
-constant("ASTAR_MAP_TYPE_HEX_FLAT", 		0);
-constant("ASTAR_MAP_TYPE_HEX_POINTED", 		1);
-constant("ASTAR_MAP_TYPE_HEX_SQUARE", 		2);
-constant("ASTAR_MAP_TYPE_HEX_TRIANGLE", 	3);
+constant("ASTAR_MAP_TYPE_HEX_FLAT", 			0);
+constant("ASTAR_MAP_TYPE_HEX_POINTED", 			1);
+constant("ASTAR_MAP_TYPE_SQUARE", 			2);
+constant("ASTAR_MAP_TYPE_TRIANGLE_FLAT", 	3);
+constant("ASTAR_MAP_TYPE_TRIANGLE_POINTED", 4);
 
 --🅻🅾🅲🅰🅻🅸🆉🅰🆃🅸🅾🅽
-local ASTAR_MAP_TYPE_HEX_FLAT 		= ASTAR_MAP_TYPE_HEX_FLAT;
-local ASTAR_MAP_TYPE_HEX_POINTED 	= ASTAR_MAP_TYPE_HEX_POINTED;
-local ASTAR_MAP_TYPE_HEX_SQUARE 	= ASTAR_MAP_TYPE_HEX_SQUARE;
-local ASTAR_MAP_TYPE_HEX_TRIANGLE 	= ASTAR_MAP_TYPE_HEX_TRIANGLE;
-
+local ASTAR_MAP_TYPE_HEX_FLAT 			= ASTAR_MAP_TYPE_HEX_FLAT;
+local ASTAR_MAP_TYPE_HEX_POINTED 		= ASTAR_MAP_TYPE_HEX_POINTED;
+local ASTAR_MAP_TYPE_SQUARE 			= ASTAR_MAP_TYPE_SQUARE;
+local ASTAR_MAP_TYPE_TRIANGLE_FLAT 		= ASTAR_MAP_TYPE_TRIANGLE_FLAT;
+local ASTAR_MAP_TYPE_TRIANGLE_POINTED	= ASTAR_MAP_TYPE_TRIANGLE_POINTED
 local PROTEAN_BASE_BONUS 				= PROTEAN_BASE_BONUS;
 local PROTEAN_BASE_PENALTY 				= PROTEAN_BASE_PENALTY;
 local PROTEAN_MULTIPLICATIVE_BONUS 		= PROTEAN_MULTIPLICATIVE_BONUS;
@@ -90,7 +91,7 @@ local function mapTypeIsValid(nType)
 	return 	rawtype(nType) == "number" and
 			(	nType == ASTAR_MAP_TYPE_HEX_FLAT 		or
 				nType == ASTAR_MAP_TYPE_HEX_POINTED 	or
-				nType == ASTAR_MAP_TYPE_HEX_SQUARE		or
+				nType == ASTAR_MAP_TYPE_SQUARE		or
 				nType == ASTAR_MAP_TYPE_HEX_TRIANGLE
 			);
 end
@@ -451,6 +452,23 @@ aStarNode = class "aStarNode" {
 
 	end,
 
+	getNeighbors = function(this)
+		local tFields = tRepo.nodes[this];
+
+		if (tFields.type == ASTAR_MAP_TYPE_HEX_FLAT) then
+		elseif (tFields.type == ASTAR_MAP_TYPE_HEX_POINTED) then
+		elseif (tFields.type == ASTAR_MAP_TYPE_SQUARE) then
+		elseif (tFields.type == ASTAR_MAP_TYPE_TRIANGLE_FLAT) then
+		elseif (tFields.type == ASTAR_MAP_TYPE_TRIANGLE_POINTED) then
+			constant("", 			0);
+			constant("", 			1);
+			constant("", 			2);
+			constant("", 	3);
+			constant("", 4);
+		end
+
+	end,
+
 	getOwner = function(this)
 		return tRepo.nodes[this].owner;
 	end,
@@ -678,14 +696,7 @@ aStarRover = class "aStarRover" {
 	end,
 };
 
-local function createVertex()
-	return {
-		node 	= null,
-		f		= 0,
-		g		= 0,
-		h		= 0,
-	}
-end
+--TODO account for caves/portals/etc. when doing pathfinding...add this functionality
 
 --[[██████╗░░█████╗░████████╗██╗░░██╗
 	██╔══██╗██╔══██╗╚══██╔══╝██║░░██║
@@ -713,13 +724,25 @@ aStarPath = class "aStarPath" {
 		local oLayer 	= oStartNode:getOwner();
 		local tNodes	= oLayer:getNodes();
 
+		--setup the pathfinding table
+		local tData 	= {};
+
+		for _, oNode in pairs(tNodes) do
+			tData[oNode] = {
+				f			= 0, -- g + h
+				g			= 0, --distance from start
+				h			= 0, --distance to destination
+				previous	= nil,
+			};
+		end
+
 		--create the lists
 		local tOpen 	= {};
 		local tClosed 	= {};
-		local oCurrent	= createVertex();
-		oCurrent.node = oStartNode;
 
-		print(type(oCurrent.node))
+		local oCurrent	= oStartNode
+
+
 	end,
 
 	getNextNode = function(this)
