@@ -55,6 +55,7 @@ local table 		= table;
 local type 			= type;
 
 --🅳🅴🅲🅻🅰🆁🅰🆃🅸🅾🅽🆂
+local aStar;
 local aStarMap;
 local aStarLayer;
 local aStarLayerConfig;
@@ -655,17 +656,32 @@ aStarAspect = class "aStarAspect" {
 
 };
 
+--TODO move help to another module for readability (and pull the data in here)
+--TODO on second thought, why not parse this file for dox (or dox-lie) text and create the help fro that?
+--create the help for this module
+local tAStarRoverInfo = {};
+local tAStarRoverHelp = {
+	addDeniedType = {
+					title = "addDeniedType",
+					desc = "Adds an item to the list of types that are denied entry to a node this rover occupies."..
+						"\nAdding an asterisk ('*') will deny all types."..
+						"\nNote: No matter what types a rover denies, it cannot deny entry to other rovers which share one of its own types."..
+						"\nIn addition, a rover cannot add a denied type that matches one of its own types.",
+					example = "",
+				},
+};
+local fAStarRoverHelp = infusedhelp(tAStarRoverInfo, tAStarRoverHelp);
 
---[[██████╗░░█████╗░██╗░░░██╗███████╗██████╗░
-	██╔══██╗██╔══██╗██║░░░██║██╔════╝██╔══██╗
-	██████╔╝██║░░██║╚██╗░██╔╝█████╗░░██████╔╝
-	██╔══██╗██║░░██║░╚████╔╝░██╔══╝░░██╔══██╗
-	██║░░██║╚█████╔╝░░╚██╔╝░░███████╗██║░░██║
-	╚═╝░░╚═╝░╚════╝░░░░╚═╝░░░╚══════╝╚═╝░░╚═╝
-	Note: unlike other classes, this one directly accesses/modifies node
-	info without calling node class methods. This design style is allowed
-	since rovers techincally and practically belong to node objects.
-	]]
+	--[[██████╗░░█████╗░██╗░░░██╗███████╗██████╗░
+		██╔══██╗██╔══██╗██║░░░██║██╔════╝██╔══██╗
+		██████╔╝██║░░██║╚██╗░██╔╝█████╗░░██████╔╝
+		██╔══██╗██║░░██║░╚████╔╝░██╔══╝░░██╔══██╗
+		██║░░██║╚█████╔╝░░╚██╔╝░░███████╗██║░░██║
+		╚═╝░░╚═╝░╚════╝░░░░╚═╝░░░╚══════╝╚═╝░░╚═╝
+		Note: unlike other classes, this one directly accesses/modifies node
+		info without calling node class methods. This design style is allowed
+		since rovers techincally and practically belong to node objects.
+		]]
 aStarRover = class "aStarRover" {
 	__construct = function(this, prot, oAStarNode)
 
@@ -679,10 +695,16 @@ aStarRover = class "aStarRover" {
 			aversions	 		= {},
 			aversionsByName	 	= {},
 			aversionsDecoy 		= {},
+			deniedTypes			= {}, --used for preventing entry into occupied nodes which contain rovers of these types
+			deniedTypesByName	= {},
+			deniedTypesDecoy	= {},
 			movePoints			= 0,
 			onEnterNode			= nil,
 			onExitNode			= nil,
 			owner 				= oAStarNode,
+			types				= {}, --the types I am (for example, [FactionName])
+			typesByName			= {},
+			typesDecoy			= {},
 		};
 
 		local tFields 	= tRepo.rovers[this];
@@ -706,9 +728,85 @@ aStarRover = class "aStarRover" {
 			tFields.aversionsByName[sAspect]	 		= oAversion;
 		end
 
-		setupActualDecoy(tFields.abhorations, 	tFields.abhorationsDecoy, "SETUP ERROR");
+		setupActualDecoy(tFields.abhorations, 	tFields.abhorationsDecoy, 	"SETUP ERROR");
 		setupActualDecoy(tFields.affinities, 	tFields.affinitiesDecoy, 	"SETUP ERROR");
-		setupActualDecoy(tFields.aversions, 	tFields.aversionsDecoy,	"SETUP ERROR");
+		setupActualDecoy(tFields.aversions, 	tFields.aversionsDecoy,		"SETUP ERROR");
+		setupActualDecoy(tFields.types, 		tFields.typesDecoy,			"SETUP ERROR");
+	end,
+
+	addDeniedType = function(this, sType)
+		local tFields = tRepo.rovers[this];
+
+		if (rawtype(sType) == "string" and sType:gsub("%s", "") ~= "" 	and
+			rawtype(tFields.deniedTypesByName[sType]) == "nil"			and
+			rawtype(tFields.typesByName[sType]) == "nil") 				then
+
+			tFields.deniedTypes[#tFields.deniedTypes + 1] 	= sType;
+			tFields.deniedTypesByName[sType] 			= true;
+		end
+
+		return this;
+	end,
+
+	addType = function(this, sType)
+		local tFields = tRepo.rovers[this];
+
+		if (rawtype(sType) == "string" and sType:gsub("%s", "") ~= "" 	and
+			rawtype(tFields.typesByName[sType]) == "nil"				and
+			rawtype(tFields.deniedTypesByName[sType]) == "nil") 		then
+
+			tFields.types[#tFields.types + 1] 	= sType;
+			tFields.typesByName[sType] 			= true;
+		end
+
+		return this;
+	end,
+
+	--[[allows all types by default.
+		same types are always allowed
+	]]
+	allowsEntryTo = function(this, other) --TODO finish
+		assert(type(other) == "aStarRover", "Attempt to check entry allowance on non-aStarRover type. Value given was of type "..rawtype(other)..".");
+		local bRet 			= true;
+		local tFields 		= tRepo.rovers[this];
+		local tMyTypes		= tFields.typesByName;
+		local tDeniedTypes 	= tFields.deniedTypesByName;
+		local tItsTypes		= tRepo.rovers[other].typesByName;
+
+		local bSharesType = false;
+
+		--look for a shared type
+		for sMyType, _ in pairs(tMyTypes) do
+
+			if (rawtype(tItsTypes[sMyType]) ~= "nil") then
+				bSharesType = true;
+				break;
+			end
+
+		end
+
+		--only look for denied types if this and the other don't share a type
+		if (not bSharesType and #tFields.deniedTypes > 0) then
+			bRet = rawtype(tDeniedTypes["*"]) == "nil";
+
+			--this gets skipped if all (unlike) types are denied
+			if (bRet) then
+
+				--look for a denied type
+				for sItsType, _ in pairs(tItsTypes) do
+
+					if (rawtype(tDeniedTypes[sItsType]) ~= "nil") then
+						bRet = false;
+						break;
+					end
+
+				end
+
+			end
+
+		end
+
+		return bRet;
 	end,
 
 	destroy = function(this)
@@ -752,6 +850,13 @@ aStarRover = class "aStarRover" {
 		return tRepo.rovers[this].owner;
 	end,
 
+	hasDeniedType = function(this, sType)
+		return 	rawtype(sType) == "string" 	and
+				rawtype(tRepo.rovers[this].deniedTypesByName[sType]) ~= "nil";
+	end,
+
+	help = fAStarRoverHelp,
+
 	isAllowedOnLayer = function(this, vLayer)--TODO finsih this
 		local bRet = false;
 		local sType = type(vLayer);
@@ -778,6 +883,11 @@ aStarRover = class "aStarRover" {
 		return bRet;
 	end,
 
+	isType = function(this, sType)
+		return 	rawtype(sType) == "string" 	and
+				rawtype(tRepo.rovers[this].typesByName[sType]) ~= "nil";
+	end,
+
 	move = function(this, oNode)
 
 	end,
@@ -788,6 +898,32 @@ aStarRover = class "aStarRover" {
 
 	moveToMap = function(this, oMap, oLayer, oNode)
 
+	end,
+
+	removeDeniedType = function(this, sType)--TODO check for type before adding
+		local tFields = tRepo.rovers[this];
+
+		if (rawtype(sType) == "string" and sType:gsub("%s", "") ~= "" and
+			rawtype(tFields.deniedTypesByName[sType]) ~= "nil") then
+
+			table.remove(tFields.deniedTypes, table.getindex(tFields.deniedTypes, sType));
+			tFields.deniedTypesByName[sType] = nil;
+		end
+
+		return this;
+	end,
+
+	removeType = function(this, sType)--TODO check for denied type before adding
+		local tFields = tRepo.rovers[this];
+
+		if (rawtype(sType) == "string" and sType:gsub("%s", "") ~= "" and
+			rawtype(tFields.typesByName[sType]) ~= "nil") then
+
+				table.remove(tFields.types, table.getindex(tFields.types, sType));
+				tFields.typesByName[sType] = nil;
+		end
+
+		return this;
 	end,
 
 	setAbhors = function(this, sAspect, bAbhors)--TODO CHECK TYPE AND UPPER THIS PARAMETER
@@ -839,6 +975,9 @@ aStarRover = class "aStarRover" {
 		return this;
 	end,
 };
+
+
+
 
 --TODO account for caves/portals/etc. when doing pathfinding...add this functionality
 --[[
@@ -984,7 +1123,7 @@ aStarPath = class "aStarPath" {
 	██╔══██║░╚═══██╗░░░██║░░░██╔══██║██╔══██╗
 	██║░░██║██████╔╝░░░██║░░░██║░░██║██║░░██║
 	╚═╝░░╚═╝╚═════╝░░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚═╝]]
-local aStar = class "aStar" {
+aStar = class "aStar" {
 	__construct = function(this, prot, ...)
 		local tAspects = {...} or arg;
 		--TODO assertions for aspects | must be variable-compliant

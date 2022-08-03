@@ -47,21 +47,16 @@ local oRover3 = oTerrainLayer:createRoverAt(5, 10);
 --oRover:getAbhoration(tA.AQuIFER):set(PROTEAN_BASE_BONUS, 0.12);
 --print(oRover:setAbhors(tA.AQuIFER, false):toggleAbhors(tA.AQuIFER):abhors(tA.AQuIFER))
 oAStar.newPath(oTerrainLayer:getNode(1, 1), oTerrainLayer:getNode(10, 10), oRover1, oRover2)
-print(oRover3:isOnLayer("TERRAIn"))
+--print(oRover3:isOnLayer("TERRAIn"))
 
-for k, v in pairs(oAStar:getMaps()) do
+--oRover1
+oRover1.help("addDeniedType")
 
-end
-
-do
-  local x <const> = 42
-  x = x+1
-end
 
 
 --local oProt = oWorldMap:getLayer("TERRAIN"):getNode(3, 5):getAspect("AQUIFER"):getImpactor();
 --oProt:set(PROTEAN_ADDATIVE_BONUS, 0.21)
---print(oWorldMap:getLayer("TERRAIN"):getNode(3, 5):getImpact("AQUIFER"))
+--print(oWorldMap:getLayer("TERRAIN"):getNode(3, 5):getImaddDeniedTypepact("AQUIFER"))
 --local tWorldMapLayers = oWorldMap:getLayers();
 
 --print(oAStar:getNode("World Map", "Ground", 10, 24):getPassable());
