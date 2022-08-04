@@ -41,17 +41,25 @@ local groundConfig = aStar.newLayerConfig("TerRAIN", tA.AQUIFER, tA.COMPACTION, 
 local oWorldMap = oAStar:newMap("World Map", ASTAR_MAP_TYPE_HEX_POINTED, {groundConfig}, 50, 28);
 local oTerrainLayer = oWorldMap:getLayer("TERRaIN");
 local oNode = oTerrainLayer:getNode(3, 5);
+oNode:getAspect(tA.AQUIFER):getImpactor():set(PROTEAN_VALUE_BASE, 0.8);
 local oRover1 = oNode:createRover();
 local oRover2 = oNode:createRover();
+oRover2:addType("ELF")
 local oRover3 = oTerrainLayer:createRoverAt(5, 10);
+oRover3:addType("DEMON");
+oRover2:addDeniedType("DEMON");
+--oRover3:setAbhors(tA.COMPACTION, true);
+--oNode:setPassable(-oNode:isPassable());
 --oRover:getAbhoration(tA.AQuIFER):set(PROTEAN_BASE_BONUS, 0.12);
 --print(oRover:setAbhors(tA.AQuIFER, false):toggleAbhors(tA.AQuIFER):abhors(tA.AQuIFER))
 oAStar.newPath(oTerrainLayer:getNode(1, 1), oTerrainLayer:getNode(10, 10), oRover1, oRover2)
 --print(oRover3:isOnLayer("TERRAIn"))
 
+--for x = 1, 100000 do
+	print(oNode:isPassable(oRover3, oRover1, "er"));
+--end
 --oRover1
-oRover1.help("addDeniedType")
-
+--oRover1.help("addDeniedType")
 
 
 --local oProt = oWorldMap:getLayer("TERRAIN"):getNode(3, 5):getAspect("AQUIFER"):getImpactor();

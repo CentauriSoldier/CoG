@@ -91,6 +91,13 @@ local tRepo = {
 	╚═╝░░░░░░╚═════╝░╚═╝░░╚══╝░╚════╝░░░░╚═╝░░░╚═╝░╚════╝░╚═╝░░╚══╝╚═════╝░]]
 
 
+local function clampNodeEntryCost(nValue)
+	local nRet 	= nValue 	>= ASTAR_NODE_ENTRY_COST_MIN and nValue or ASTAR_NODE_ENTRY_COST_MIN;
+	nRet 		= nValue 	<= ASTAR_NODE_ENTRY_COST_MAX and nValue or ASTAR_NODE_ENTRY_COST_MAX;
+	return nRet;--TODO should this be floored?
+end
+
+
 local function mapDimmIsValid(nValue)
 	return rawtype(nValue) 	== "number" and nValue	> 0 and nValue == math.floor(nValue);
 end
@@ -585,12 +592,52 @@ F = math.clamp(B + Naf * M, ASTAR_NODE_ENTRY_COST_MIN, ASTAR_NODE_ENTRY_COST_MAX
 		return #tRepo.nodes[this].ports > 0;
 	end,
 
-	isPassable = function(this, oRover)
-		local tFields 	= tRepo.nodes[this];
-		local bRet 		= tFields.isPassable;
+	isPassable = function(this, ...)
+		local tFields 		= tRepo.nodes[this];
+		local tAspects		= tFields.aspectsByName;
+		local tLocalRovers	= tFields.rovers;
+		local bRet 			= tFields.isPassable;
+
+		--TODO check rover var args!!!!
 
 		if (bRet) then
---TODO finish this!!!!
+		local tOutRovers = {...} or arg;
+		--allow for individual rover args or a table of rovers
+		tOutRovers = (type(tOutRovers[1]) == "table") and tOutRovers[1] or tOutRovers;
+
+			for _, oOutRover in pairs(tOutRovers) do
+				assert(type(oOutRover) == "aStarRover", "Attempt to check node passability for non-aStarRover. Value given was of type "..type(oOutRover).." at index "..tostring(_)..".")
+
+				--check for abhorations
+				for __, oAspect in pairs(tAspects) do
+
+					if (oAspect:getImpactor():get() > 0) then
+
+						if (oOutRover:abhors(oAspect:getName())) then
+							bRet = false;
+							break;
+						end
+
+					end
+
+				end
+
+				if (bRet) then
+
+					--check for disallowed rover types
+					for oLocalRover, ___ in pairs(tLocalRovers) do
+
+						if not (oLocalRover:allowsEntryTo(oOutRover)) then
+							bRet = false;
+							break;
+						end
+
+					end
+
+				end
+
+			end
+
 		end
 
 		return bRet;
@@ -620,7 +667,7 @@ F = math.clamp(B + Naf * M, ASTAR_NODE_ENTRY_COST_MIN, ASTAR_NODE_ENTRY_COST_MAX
 	end,
 };
 
-
+local DEFAULT_ASPECT_IMPACTOR_BASE_VALUE = 1;
 --[[░█████╗░░██████╗██████╗░███████╗░█████╗░████████╗
 	██╔══██╗██╔════╝██╔══██╗██╔════╝██╔══██╗╚══██╔══╝
 	███████║╚█████╗░██████╔╝█████╗░░██║░░╚═╝░░░██║░░░
@@ -630,7 +677,7 @@ F = math.clamp(B + Naf * M, ASTAR_NODE_ENTRY_COST_MIN, ASTAR_NODE_ENTRY_COST_MAX
 aStarAspect = class "aStarAspect" {
 	__construct = function(this, prot, oAStarNode, sName)
 		tRepo.aspects[this] = {
-			impactor	= protean(1, 0, 0, 0, 0, 0, 0, 0, 1, nil, true),--a percentage referencing the extremity of the aspect (0%-100%)
+			impactor	= protean(DEFAULT_ASPECT_IMPACTOR_BASE_VALUE, 0, 0, 0, 0, 0, 0, 0, 1, nil, true),--a percentage referencing the extremity of the aspect (0%-100%)
 			name 		= sName,
 			owner 		= oAStarNode,
 		};
@@ -698,7 +745,7 @@ aStarRover = class "aStarRover" {
 			deniedTypes			= {}, --used for preventing entry into occupied nodes which contain rovers of these types
 			deniedTypesByName	= {},
 			deniedTypesDecoy	= {},
-			movePoints			= 0,
+			movePoints			= protean(),sd
 			onEnterNode			= nil,
 			onExitNode			= nil,
 			owner 				= oAStarNode,
@@ -732,6 +779,10 @@ aStarRover = class "aStarRover" {
 		setupActualDecoy(tFields.affinities, 	tFields.affinitiesDecoy, 	"SETUP ERROR");
 		setupActualDecoy(tFields.aversions, 	tFields.aversionsDecoy,		"SETUP ERROR");
 		setupActualDecoy(tFields.types, 		tFields.typesDecoy,			"SETUP ERROR");
+	end,
+
+	abhors = function(this, sAspect)--TODO CHECK TYPE AND UPPER THIS PARAMETER
+		return tRepo.rovers[this].abhorations[sAspect] or false;
 	end,
 
 	addDeniedType = function(this, sType)
@@ -816,10 +867,6 @@ aStarRover = class "aStarRover" {
 
 		tRepo.rovers[this] = nil;
 		this = nil;
-	end,
-
-	abhors = function(this, sAspect)--TODO CHECK TYPE AND UPPER THIS PARAMETER
-		return tRepo.rovers[this].abhorations[sAspect] or false;
 	end,
 
 	getAbhorations = function(this)
@@ -1024,6 +1071,7 @@ Regarding Groups:
 aStarPath = class "aStarPath" {
 	__construct= function(this, prot, oStartNode, oEndNode, ...)
 		local tRovers = {...} or arg;
+		tRovers = (type(tRovers[1]) == "table") and tRovers[1] or tRovers;
 
 		--TODO check the rovers table
 		--TODO make sure the listed rovers are at the starting node
