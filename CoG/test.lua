@@ -56,7 +56,7 @@ oAStar.newPath(oTerrainLayer:getNode(1, 1), oTerrainLayer:getNode(10, 10), oRove
 --print(oRover3:isOnLayer("TERRAIn"))
 
 --for x = 1, 100000 do
-	print(oNode:isPassable(oRover3, oRover1, "er"));
+	print(oNode:isPassable(oRover3, oRover1));
 --end
 --oRover1
 --oRover1.help("addDeniedType")
