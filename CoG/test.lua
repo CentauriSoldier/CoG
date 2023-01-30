@@ -1,9 +1,36 @@
---package.path = package.path..";LuaEx\\?.lua;..\\?.lua;?.lua";
-package.path = package.path..";CoG\\?.lua";
-require("init");
-local function p(item)
-	print(tostring(item).." ("..type(item)..")")
+function getsourcepath()
+	--determine the call location
+	local sPath = debug.getinfo(1, "S").source;
+	--remove the calling filename
+	local sFilenameRAW = sPath:match("^.+"..package.config:sub(1,1).."(.+)$");
+	--make a pattern to account for case
+	local sFilename = "";
+	for x = 1, #sFilenameRAW do
+		local sChar = sFilenameRAW:sub(x, x);
+
+		if (sChar:find("[%a]")) then
+			sFilename = sFilename.."["..sChar:upper()..sChar:lower().."]";
+		else
+			sFilename = sFilename..sChar;
+		end
+
+	end
+	sPath = sPath:gsub("@", ""):gsub(sFilename, "");
+	--remove the "/" at the end
+	sPath = sPath:sub(1, sPath:len() - 1);
+
+	return sPath;
 end
+
+--determine the call location
+local sPath = getsourcepath();
+
+--update the package.path (use the main directory to prevent namespace issues)
+package.path = package.path..";"..sPath.."\\..\\?.lua;";
+
+--load LuaEx
+require("CoG.init");
+--============= TEST CODE BELOW =============
 
 --local r = rectangle(point(0, 0), 25, 20);
 --local t = rectangle(point(0, 0), 25, 20);
@@ -74,16 +101,10 @@ end
 --check if item is of type enum.
 ]]
 
-enum("NUMBER", {"ODD", "EVEN"}, {
-				enum("ODD", 	{"ONE", "THREE", "FIVE", "SEVEN", "sd"},		nil, true),
-				enum("EVEN", 	{"TWO", "FOUR", "SIX", "EIGHT", "TEN"}, nil, true),
-				})
---COLOR.RED.OR = 0
-local k = NUMBER.EVEN.TWO
-print(NUMBER[1].next())
+local tVertices 	= {point(0, 0), point(3, 3), point(3, -1)};
+local bSkipUpdate 	= false;
 
-
-
+local tri = polygon(tVertices, bSkipUpdate)
 
 
 
