@@ -198,10 +198,10 @@ local function updatePerimeterAndEdges(tProt)
 	for i = 1, nVerticesCount do
 		local oPoint1 = tVertices[i];
 		local oPoint2 = i < nVerticesCount and tVertices[i + 1] or tVertices[1];
-		--print(tostring(oPoint1).." - "..tostring(oPoint2))
+
 		tProt.edges[i]:setStart(oPoint1, true);
 		tProt.edges[i]:setEnd(oPoint2);
-		-- = 0;--math.sqrt( (oPoint1.x - oPoint2.x)^2 + (oPoint1.y - oPoint2.y)^2 );
+		
 		tProt.perimeter = tProt.perimeter + tProt.edges[i]:getLength();
 	end
 
