@@ -201,7 +201,7 @@ local function updatePerimeterAndEdges(tProt)
 
 		tProt.edges[i]:setStart(oPoint1, true);
 		tProt.edges[i]:setEnd(oPoint2);
-		
+
 		tProt.perimeter = tProt.perimeter + tProt.edges[i]:getLength();
 	end
 
@@ -209,10 +209,16 @@ local function updatePerimeterAndEdges(tProt)
 end
 
 local function updateAngles(tProt)
-	tProt.interiorAngles 	= {};
-	tProt.exteriorAngles 	= {};
-	local tEdges 			= tProt.edges;
-	local nEdges			= #tProt.edges;
+	tProt.interiorAngles 		= {};
+	tProt.exteriorAngles 		= {};
+	tProt.isConcave 			= false;
+	tProt.isRegular				= false;
+	local nRegularityAngleMark	= 0;
+	local nRegularityEdgeMark	= 0;
+	local bRegularityFailed		= false;
+	local tEdges 				= tProt.edges;
+	local nEdges				= #tProt.edges;
+
 
 	for nLine = 1, tProt.edgesCount do --use the number of vertices since it's the same as the number of edges
 		local bIsFirstLine 	= nLine == 1;
@@ -234,6 +240,30 @@ local function updateAngles(tProt)
 
 		--save the angle
 		tProt.interiorAngles[nLine] = nTheta;
+
+		--check for concavity
+		if (nTheta > 180) then
+			tProt.isConcave = true;
+		end
+
+		--regularity check init
+		if (bIsFirstLine) then
+			nRegularityAngleMark 	= nTheta;
+			nRegularityEdgeMark 	= nLength1;
+		end
+
+		--regularity check
+		if not (bRegularityFailed) then
+			--[[check that this angle is the same as
+				the last and the side, the same as the last]]
+			bRegularityFailed = not (nRegularityAngleMark == nTheta and nRegularityEdgeMark == nLength1);
+		end
+
+		--if this is the last line and all angles/edges are repectively equal
+		if (not bRegularityFailed and nLine == nEdges) then
+			tProt.isRegular = true;
+		end
+
 		--get the exterior angle: this allows for negative interior angles so all ext angles == 360 even on concave polygons
 		tProt.exteriorAngles[nLine] = 180 - tProt.interiorAngles[nLine];
 	end
@@ -281,6 +311,8 @@ local polygon = class "polygon" : extends(shape) {
 		tProt.vertices				= rawtype(tProt.vertices)		== "table" 	and tProt.vertices 			or {};
 		tProt.edges					= rawtype(tProt.edges)			== "table" 	and tProt.edges 			or {};
 		tProt.area 					= rawtype(tProt.area) 			== "number" and tProt.area 				or 0;
+		tProt.isConcave				= false;
+		tProt.isRegular				= false;
 		--this can be be set to a vertex ID or one of the shape anchor constants
 		tProt.anchorIndex 			= rawtype(tProt.anchorIndex) 	== "number" and tProt.anchorIndex		or SHAPE_ANCHOR_DEFAULT;
 
@@ -411,7 +443,7 @@ local polygon = class "polygon" : extends(shape) {
 		local tProt	= tProtectedRepo[this];
 		local oRet;
 
-		if (tProt.vertices[tProt.anchorIndex] ~= nil) then
+		if (tProt.vertices[tProt.anchorIndex] ~= nil) then--TODO is this right?
 			oRet = tProt.vertices[tProt.anchorIndex];
 		elseif (tProt.anchors[tProt.anchorIndex] ~= nil) then
 			oRet = tProt.anchors[tProt.anchorIndex];
@@ -429,19 +461,15 @@ local polygon = class "polygon" : extends(shape) {
 	end,
 
 	intersects = function(this, oOther)
-		return false;
+		error("This function has not yet been written. Please refrain from using this function for the time being.");
 	end,
 
 	isConcave = function(this)--at least one angle that is greater than 180 degrees
-		local bRet = false;
-
-		--TODO do this during angle update
-
-		return bRet;
+		return tProtectedRepo[this].isConcave;
 	end,
 
 	isConvex = function(this)--no angle greater than 180 degrees
-		return not this:isConcave();
+		return not tProtectedRepo[this].isConcave;
 	end,
 
 	isComplex = function(this)--when crossing over itself
@@ -449,27 +477,11 @@ local polygon = class "polygon" : extends(shape) {
 	end,
 
 	isIrregular = function(this, oOther)
-		return not this:isRegular(oOther);
+		return not tProtectedRepo[this].isRegular;
 	end,
 
 	isRegular = function(this)--when all sides are equal and all angles are equal
-		local bRet 			= true;
-		local tProt			= tProtectedRepo[this];
-
-		local nLastEdgeLength = tProt.edges[1].length;
-
-		for x = 2, #tProt.edges do
-			local nEdgeLength = tProt.edges[x].length;
-
-			if (nEdgeLength ~= nLastEdgeLength) then
-				bRet = false;
-				break;
-			end
-
-			nLastEdgeLength = nEdgeLength;
-		end
-
-		return bRet;
+		return tProtectedRepo[this].isRegular;
 	end,
 
 	getAnchorIndex = function(this)
@@ -510,7 +522,6 @@ local polygon = class "polygon" : extends(shape) {
 
 		return this;
 	end,
-
 
 	setPos = function(this, nX, nY)
 		local tProt	= tProtectedRepo[this];
@@ -554,6 +565,7 @@ local polygon = class "polygon" : extends(shape) {
 			tProt:updateAngles();
 		end
 
+		return this;
 	end,
 
 	--TODO should each subclass be forced to set a minimum limit for the vertices so that a fewer-than-expected-input will throw an error.
@@ -562,7 +574,80 @@ local polygon = class "polygon" : extends(shape) {
 		--TODO this function has been updated and, as such, these input arguments are wrong
 		tProt:importVertices(tPoints, tProt.verticesCount);
 		--TODO doesn't this need updated here?
+		return this;
 	end,
+
+	translate = function(this, nX, nY)
+		local tProt = tProtectedRepo[this];
+
+		--update all vertices
+		for nVertex, oVertex in ipairs(tProt.vertices) do
+			oVertex.x = oVertex.x + nX;
+			oVertex.y = oVertex.y + nY;
+		end
+
+		--update all anchors
+		for nVertex, oVertex in ipairs(tProt.anchors) do
+			oVertex.x = oVertex.x + nX;
+			oVertex.y = oVertex.y + nY;
+		end
+
+		return this;
+	end,
+
+	translateTo = function(this, oPoint)
+		local tProt = tProtectedRepo[this];
+
+		--get the anchor point and find the change in x and y
+		local oAnchor = tProt.anchors[tProt.anchorIndex];
+		local nDeltaX = oPoint.x - oAnchor.x;
+		local nDeltaY = oPoint.y - oAnchor.y;
+
+		--adjust all vertices to reflect that change
+		for nVertex, oVertex in ipairs(tProt.vertices) do
+			oVertex.x = oVertex.x + nDeltaX;
+			oVertex.y = oVertex.y + nDeltaY;
+		end
+
+		--update all anchors
+		for nVertex, oVertex in ipairs(tProt.anchors) do
+			oVertex.x = oVertex.x + nDeltaX;
+			oVertex.y = oVertex.y + nDeltaY;
+		end
+
+		return this;
+	end,
+
+	tween = function(this, oPoint, nStepX, nStepY)
+		local tProt = tProtectedRepo[this];
+		local oAnchor = tProt.anchors[tProt.anchorIndex];
+
+		if (oAnchor.x ~= oPoint.x or oAnchor.y ~= oPoint.y) then
+			local nTotalXToGo = math.abs(math.abs(oAnchor.x) - math.abs(oPoint.x));
+			local nTotalYToGo = math.abs(math.abs(oAnchor.y) - math.abs(oPoint.y));
+
+			--make sure we don't over step
+			if (nXStep > nTotalXToGo or nYStep > nTotalYToGo) then
+				--LEFT OFF HERE!!!!
+			else
+
+				--update all vertices
+				for nVertex, oVertex in ipairs(tProt.vertices) do
+					oVertex.x = oVertex.x + nX;
+					oVertex.y = oVertex.y + nY;
+				end
+
+				--update all anchors
+				for nVertex, oVertex in ipairs(tProt.anchors) do
+					oVertex.x = oVertex.x + nX;
+					oVertex.y = oVertex.y + nY;
+				end
+
+			end
+
+		end
+
+	end
 };
 
 return polygon;

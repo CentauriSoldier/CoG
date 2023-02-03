@@ -105,10 +105,24 @@ local tVertices 	= {k, point(3, 4), point(3, 0)};
 local bSkipUpdate 	= false;
 
 local tri = polygon(tVertices, bSkipUpdate)
-print(tri:getSumofInteriorAngles(3))
+print(tri:isRegular())
+
+co = coroutine.create(function(max)
+if not x then
+	x = 1
+end
+
+	x = x + max
+	print(x)
+	coroutine.yield();
+end);
 
 
 
+coroutine.resume(co, 12)
+coroutine.resume(co, 12)
+coroutine.resume(co, 12)
+coroutine.resume(co, 12)
 
 
 
