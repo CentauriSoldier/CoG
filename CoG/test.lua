@@ -105,26 +105,24 @@ local tVertices 	= {k, point(3, 4), point(3, 0)};
 local bSkipUpdate 	= false;
 
 local tri = polygon(tVertices, bSkipUpdate)
-print(tri:isRegular())
+--print(tri:isRegular())
 
-co = coroutine.create(function(max)
-if not x then
-	x = 1
+local CREATURE = clausum();
+CREATURE.HUMAN = clausum("CREATURE");
+CREATURE.HUMAN.SOLDIER = clausum("CREATURE.HUMAN");
+CREATURE.HUMAN.SOLDIER.COUNT = 17;
+CREATURE.HUMAN.SOLDIER.ERIC = {age = 22, power = 56}
+CREATURE.DOG = "asd"
+CREATURE.FROG = {};
+
+print(CREATURE.DOG.val)
+
+for _, item in CREATURE() do
+
+
+--print(tostring(item))
+
 end
-
-	x = x + max
-	print(x)
-	coroutine.yield();
-end);
-
-
-
-coroutine.resume(co, 12)
-coroutine.resume(co, 12)
-coroutine.resume(co, 12)
-coroutine.resume(co, 12)
-
-
 
 
 
