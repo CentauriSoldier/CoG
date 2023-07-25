@@ -36,7 +36,7 @@ end
 local hexagon = class "hexagon" : extends(polygon) {
 
 	__construct = function(this, tProtected, oCenterPoint, nSize, bIsFlat)
-		tProtectedRepo[this] = rawtype(tProtected) == "table" and tProtected or {};
+		tProtectedRepo[this] = tProtected or {};
 
 		local tFields 			= tProtectedRepo[this];
 		tFields.size 			= type(nSize) 	== "number" 	and nSize 	or 1;

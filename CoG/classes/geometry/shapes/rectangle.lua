@@ -45,7 +45,7 @@ return class "rectangle" : extends(polygon) {
 	@ret oRectangle rectangle A rectangle object. Public properties are vertices (a numerically-indexed table containing points for each corner), width and height.
 	]]
 	__construct = function(this, tProtected, pTopLeft, nWidth, nHeight)
-		tProtectedRepo[this] = rawtype(tProtected) == "table" and tProtected or {};
+		tProtectedRepo[this] = tProtected;
 		local tFields = tProtectedRepo[this];
 
 		--set th width and height

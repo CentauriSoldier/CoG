@@ -84,7 +84,7 @@ local triangle = class "triangle" : extends(polygon) {
 	@ret oTriangle triangle A triangle object. Public properties are vertices (a table containing points for each corner [topLeft, topRight, bottomRight, bottomLeft, center]), width and height.
 	]]
 	__construct = function(this, tProtected, oPoint1, oPoint2, oPoint3)
-		tProtectedRepo[this] = rawtype(tProtected) == "table" and tProtected or {};
+		tProtectedRepo[this] = tProtected or {};
 		local tFields = tProtectedRepo[this];
 
 		--default the values in case the initial update is skipped

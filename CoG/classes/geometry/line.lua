@@ -98,7 +98,7 @@ end
 return class "line" {
 
 	__construct = function(this, tProtected, oStartPoint, oEndPoint, bSkipUpdate)
-		tProtectedRepo[this] = rawtype(tProtected) == "table" and tProtected or {};
+		tProtectedRepo[this] = tProtected;
 		local tProt = tProtectedRepo[this];
 
 		tProt.midpoint  = point();

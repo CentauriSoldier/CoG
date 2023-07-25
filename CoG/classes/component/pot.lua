@@ -185,7 +185,7 @@ local pot = class "pot" {
 		@param
 		@ret
 	!]]
-	__construct = function(this, tProt, nMin, nMax, nPos, nRate, nContinuity)
+	__construct = function(this, shared, nMin, nMax, nPos, nRate, nContinuity)
 		tPots[this] = {
 			alternator			= 1,
 			continuity			= continuityIsValid(nContinuity) and nContinuity or POT_CONTINUITY_NONE,

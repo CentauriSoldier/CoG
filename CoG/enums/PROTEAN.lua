@@ -1,3 +1,5 @@
+--legacy
+--[[
 local PROTEAN 					= enum.prep("PROTEAN");
 PROTEAN.BASE 					= enum.prep("BASE", true);
 PROTEAN.BASE.BONUS				= 0;
@@ -17,3 +19,4 @@ PROTEAN.LIMIT.MAX				= 9;
 
 --finalize the enum
 PROTEAN();
+]]

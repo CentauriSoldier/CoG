@@ -49,7 +49,7 @@ local circle = class "circle" : extends(shape) {
 	@ret oCircle circle A circle object. Public properties are center and radius.
 	]]
 	__construct = function(this, tProtected, pCenter, nRadius)
-		tProtectedRepo[this] = rawtype(tProtected) 	== "table" and tProtected or {};
+		tProtectedRepo[this] = tProtected or {};
 		--super(tProtectedRepo[this], true);
 		local tFields = tProtectedRepo[this];
 

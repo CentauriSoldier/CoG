@@ -171,33 +171,36 @@ constant("SHAPE_ANCHOR_CENTROID",	 	-1); --DO NOT CHANGE THIS VALUE
 constant("SHAPE_ANCHOR_DEFAULT",		SHAPE_ANCHOR_CENTROID);
 
 --require the enums
-require(rEnums..".PROTEAN");
-require(rEnums..".IOTA");
+--require(rEnums..".PROTEAN");
+--require(rEnums..".IOTA");
 
 --static entities and generators
-lists 		= require(rStatic			..".lists"); --TODO change this a less common name!
-name 		= require(rGenerators		..".name"); --TODO change this a less common name!
+--lists 		= require(rStatic			..".lists"); --TODO change this a less common name!
+--name 		= require(rGenerators		..".name"); --TODO change this a less common name!
+--scaler		= require(rStatic			..".scaler");
+--roll		= require(rStatic			..".roll");
 
 --classes (geometry)
-point 		= require(rClassesGeometry	..".point");
-line 		= require(rClassesGeometry	..".line");
-shape 		= require(rClassesShapes	..".shape");
-circle 		= require(rClassesShapes	..".circle");
-polygon		= require(rClassesShapes	..".polygon");
-hexagon		= require(rClassesShapes	..".hexagon");
-rectangle 	= require(rClassesShapes	..".rectangle");
-triangle	= require(rClassesShapes	..".triangle");
+--point 		= require(rClassesGeometry	..".point");
+--line 		= require(rClassesGeometry	..".line");
+--shape 		= require(rClassesShapes	..".shape");
+--circle 		= require(rClassesShapes	..".circle");
+--polygon		= require(rClassesShapes	..".polygon");
+--hexagon		= require(rClassesShapes	..".hexagon");
+--rectangle 	= require(rClassesShapes	..".rectangle");
+--triangle	= require(rClassesShapes	..".triangle");
 
 --classes (component)
-pot 		= require(rClassesComponent	..".pot");
-protean 	= require(rClassesComponent	..".protean");
+--pot 		= require(rClassesComponent	..".pot");
+--protean 	= require(rClassesComponent	..".protean");
 
 --classes (other)
 --action 	= require(rClasses			..".action");
 --bank 		= require(rClasses			..".bank");
 --combator 	= require(rClasses			..".combator");
-iota 		= require(rClasses			..".iota");
-targetor	= require(rClasses			..".targetor");
-aStar		= require(rClasses			..".aStar.aStar");
+--pool 		= require(rClasses			..".pool");
+--iota 		= require(rClasses			..".iota");
+--targetor	= require(rClasses			..".targetor");
+--aStar		= require(rClasses			..".aStar.aStar");
 --useful if using CoG as a dependency in multiple modules to prevent the need for loading multilple times
 constant("COG_INIT", true);

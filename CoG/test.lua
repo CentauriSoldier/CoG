@@ -48,7 +48,7 @@ local tBullet = {
 };
 
 
-local bullet = struct("bullet", {
+--[[local bullet = struct("bullet", {
 	id 			= 34,
 	velocity 	= 0,
 	hasImpacted = false,
@@ -56,7 +56,7 @@ local bullet = struct("bullet", {
 });
 i = set();
 --local k = bullet();
-local k = bullet({id = "34sdf"});
+local k = bullet({id = "34sdf"});]]
 --local t = bullet();
 --p(s == null)
 --k.id = NULL
@@ -99,7 +99,7 @@ end
 --print(COLOR.RED.enum.__name)
 
 --check if item is of type enum.
-]]
+]]--[[
 local k = point(0, 0);
 local tVertices 	= {k, point(3, 4), point(3, 0)};
 local bSkipUpdate 	= false;
@@ -114,10 +114,26 @@ function tr()
 	loadstring("print(\"hello\")")();
 end
 
-tr();
-
+tr();eType
+]]
 --print(ERRER.BLOOP.value)
---print(type(u.c.a), u.c.a.value)
+--print(type(u.c.a), u.c.a.value)eFinal
 --print(type(u.c.a), u.c.a)
 --print(_VERSION)
 --directive.enum("C:\\Users\\CS\\Sync\\Projects\\GitHub\\Supremecratic\\Supremecratic\\CD_Root\\Data\\Mods\\Shipped\\Population.enum");
+--local poo = pool(10, 10, 1);
+--local pv = PoolValue;
+--poo:setModifier(PoolValue.Max, ProteanMod.MultiplicativePenalty, .5)
+--local r1 = rectangle(point(0, 0), 10, 10);
+--local r2 = rectangle(point(2, 2), 20, 20);
+--local r3 = rectangle(point(3, 3), 30, 30);
+--local r4 = rectangle(point(4, 4), 40, 40);
+--r4:setWidth(50);
+--print(poo:get(pv.Current));
+--print(r1:getArea())
+--[[
+interface "ICLoneable" {
+	Clone
+};
+
+]]
