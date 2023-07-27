@@ -31,7 +31,8 @@ package.path = package.path..";"..sPath.."\\..\\?.lua;";
 --load LuaEx
 require("CoG.init");
 --============= TEST CODE BELOW =============
-
+local p = print;
+local t = type;
 --local r = rectangle(point(0, 0), 25, 20);
 --local t = rectangle(point(0, 0), 25, 20);
 --local g = polygon({point(0,0), point(-5,5), point(10,10)});
@@ -137,3 +138,19 @@ interface "ICLoneable" {
 };
 
 ]]
+
+local k = stack();
+k.push(1)
+k.push(5)
+k.push(7)
+k.push(9)
+k.push("a")
+
+for n, item in pairs(k.values()) do
+	p(item)
+end
+
+p(k.pop())
+p(k.pop())
+p(k.pop())
+print(stack.bug)
