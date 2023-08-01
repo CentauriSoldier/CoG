@@ -175,13 +175,13 @@ constant("SHAPE_ANCHOR_DEFAULT",		SHAPE_ANCHOR_CENTROID);
 --require(rEnums..".IOTA");
 
 --static entities and generators
---lists 		= require(rStatic			..".lists"); --TODO change this a less common name!
---name 		= require(rGenerators		..".name"); --TODO change this a less common name!
---scaler		= require(rStatic			..".scaler");
---roll		= require(rStatic			..".roll");
+lists 		= require(rStatic			..".lists"); --TODO change this a less common name!
+name 		= require(rGenerators		..".name"); --TODO change this a less common name!
+scaler		= require(rStatic			..".scaler");
+roll		= require(rStatic			..".roll");
 
 --classes (geometry)
---point 		= require(rClassesGeometry	..".point");
+point 		= require(rClassesGeometry	..".point");
 --line 		= require(rClassesGeometry	..".line");
 --shape 		= require(rClassesShapes	..".shape");
 --circle 		= require(rClassesShapes	..".circle");

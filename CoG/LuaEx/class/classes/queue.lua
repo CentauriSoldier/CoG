@@ -8,11 +8,16 @@ local rawtype		= rawtype;
 local serialize		= serialize;
 local table			= table;
 local type 			= type;
+local nSpro			= class.args.staticprotected;
+local nPri 			= class.args.private;
+local nPro 			= class.args.protected;
+local nPub 			= class.args.public;
+local nIns			= class.args.instances;
 
 return class("queue",
 {--metamethods
-	__len = function(this)--doesn't work in < Lua v5.2
-		return tQueues[this].count;
+	__len = function(spro, pri, pro, pub, this)--doesn't work in < Lua v5.2
+		return pri.count;
 	end,
 },
 {},--static protected

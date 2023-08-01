@@ -2,39 +2,27 @@
 @authors Centauri Soldier
 @copyright Public Domain
 @description
-	<h2>point</h2>
-	<p>This is a basic point class.</p>
+	<h2>rectangle</h2>
+	<p>This is a basic point class. Unlike many classes, it has no private members or properties. x and y will grant access to the respective values.</p>
 @license <p>The Unlicense<br>
 <br>
-@moduleid point
-@version 1.2
+@moduleid rectangle
+@version 1.1
 @versionhistory
 <ul>
 	<li>
-		<b>1.2</b>
+		<b>1.0</b>
 		<br>
-		<p>Refactored to work with the new class system.</p>
+		<p>Created the module.</p>
 	</li>
 	<li>
 		<b>1.1</b>
 		<br>
 		<p>Add serialize and deserialize methods.</p>
 	</li>
-	<li>
-		<b>1.0</b>
-		<br>
-		<p>Created the module.</p>
-	</li>
 </ul>
 @website https://github.com/CentauriSoldier
 *]]
-
-local nSpro	= class.args.staticprotected;
-local nPri 	= class.args.private;
-local nPro 	= class.args.protected;
-local nPub 	= class.args.public;
-local nIns	= class.args.instances;
-
 constant("QUADRANT_I", 		"I");
 constant("QUADRANT_II", 	"II");
 constant("QUADRANT_III", 	"III");
@@ -53,39 +41,62 @@ local type 			= type;
 local rawtype		= rawtype;
 local math			= math;
 
-local point = class(
-"point",
-{--metamethods
+local point = class "point" {
+
+	--[[
+	@desc This is the constructor for the point class.
+	@func point The constructor for the point class.
+	@mod point
+	@param nX number The x value. If nil, it defaults to 0.
+	@param nY number The y value. If nil, it defaults to 0.
+	]]
+	__construct = function(this, _ignore_, nX, nY)
+		this.x = rawtype(nX) == "number" and nX or 0;
+		this.y = rawtype(nY) == "number" and nY or 0;
+	end,
+
 	--[[
 	@desc Adds two points together.
 	@func __add
 	@mod point
 	@ret oPoint point A new point with the values of the two points added together. If an incorrect paramters is passed, a new point with the values of the correct paramter (the point) is returned.
 	]]
-	__add = function(args, this, other)
+	__add = function(this, vRight)
 
-		if (type(this) == "point" and type(other) == "point") then
-			local pri = args[nPri];
-			local otherpri = args[nIns][other][nPri];
-
-			return point(pri.x + otherpri.x,
-						 pri.y + otherpri.y);
+		if (type(this) == "point" and type(vRight) == "point") then
+			return point(this.x + vRight.x,
+						 this.y + vRight.y);
 		end
+
 
 	end,
 
-	__eq = function(args, this, other)
-		--print(type(spro), type(pri), type(pro), type(pub), type(this), type(other))
+	--[[__div = function(this, vRight)
+		local sType = type(vRight);
+
+		if (sType == "point") then
+			this.x = this.x / vRight.x;
+			this.y = this.y + vRight.y;
+		--elseif (sType == "table") then
+
+		end
+
+		return this;
+	end,
+]]
+	__eq = function(this, vRight)
 		return type(vRight) == "point" and this.x == vRight.x and this.y == vRight.y;
 	end,
 
-	__le = function(args, this, other)
+	__le = function(this, vRight)
 		return type(vRight) == "point" and this.x <= vRight.x and this.y <= vRight.y;
 	end,
 
-	__lt = function(args, this, other)
+
+	__lt = function(this, vRight)
 		return type(vRight) == "point" and this.x < vRight.x and this.y < vRight.y;
 	end,
+
 
 	--[[__mul = function(this, vRight)
 		local sType = type(vRight);
@@ -100,50 +111,19 @@ local point = class(
 		return this;
 	end,]]
 
-	__sub = function(args, this, other)
 
-		local sType = type(other);
-		print(this)
+	__sub = function(this, vRight)
+		local sType = type(vRight);
 
 		if (sType == "point") then
-
-			return point(this.getX() - other.getX(),
-						 this.getY() - other.getY());
+			return point(this.x - vRight.x,
+						 this.y - vRight.y);
 		end
 
 	end,
 
-	__tostring = function(args, this)
-		local pri = args[nPri];
-		return "x: "..pri.x.." y: "..pri.y;
-	end,
-},
-{--static protected
-
-},
-{--static public
-
-},
-{--private
-	x,
-	y,
-},
-{--protected
-
-},
-{--public
-	--[[
-	@desc This is the constructor for the point class.
-	@func point The constructor for the point class.
-	@mod point
-	@param nX number The x value. If nil, it defaults to 0.
-	@param nY number The y value. If nil, it defaults to 0.
-	]]
-
-	point = function(this, args, nX, nY)
-		local pri = args[nPri];
-		pri.x = rawtype(nX) == "number" and nX or 0;
-		pri.y = rawtype(nY) == "number" and nY or 0;
+	__tostring = function(this)
+		return "x: "..this.x.." y: "..this.y;
 	end,
 
 	deserialize = function(this, sData)
@@ -155,30 +135,18 @@ local point = class(
 		return this;
 	end,
 
-	clone = function(this, args)
-		local pri = args[nPri];
-		return point(pri.x, pri.y);
-	end,
-
-	getX = function(this, args)
-		local pri = args[nPri];
-		return pri.x;
-	end,
-
-	getY = function(this, args)
-		local pri = args[nPri];
-		return pri.y;
+	clone = function(this)
+		return point(this.x, this.y);
 	end,
 
 	--return O, X, Y, -X, -Y, I, II, III or IV
-	getQuadrant = function(this, args)
-		local pri = args[nPri];
+	getQuadrant = function(this)
 		local sRet 		= "ERROR";
-		local bYIsNeg 	= pri.y < 0;
-		local bYIs0 	= pri.y == 0;
-		local bYIsPos 	= pri.y > 0;--not bYIsNeg and not bYIs0;
+		local bYIsNeg 	= this.y < 0;
+		local bYIs0 	= this.y == 0;
+		local bYIsPos 	= this.y > 0;--not bYIsNeg and not bYIs0;
 
-		if (pri.x < 0) then
+		if (this.x < 0) then
 
 			if (bYIsNeg) then
 				sRet = "III";
@@ -188,7 +156,7 @@ local point = class(
 				sRet = "II";
 			end
 
-		elseif (pri.x == 0) then
+		elseif (this.x == 0) then
 
 			if (bYIsNeg) then
 				sRet = "-Y";
@@ -198,7 +166,7 @@ local point = class(
 				sRet = "Y";
 			end
 
-		elseif (pri.x > 0) then
+		elseif (this.x > 0) then
 
 			if (bYIsNeg) then
 				sRet = "IV";
@@ -245,19 +213,6 @@ local point = class(
 		return tData;
 	end,
 
-
-	setX = function(this, args)
-		local pri = args[nPri];
-		pri.x = type(nX) == "number" and nX or pri.x;
-		return this;
-	end,
-
-	setY = function(this, args)
-		pri.y = type(nY) == "number" and nY or pri.y;
-		return this;
-	end,
-
-
 	--[[deprecated...this is a line function
 	slopeTo = function(this, oOther)
 		local nRet = 0;
@@ -277,10 +232,6 @@ local point = class(
 
 		return nRet;
 	end,]]
-},
-nil,    --extending class
-nil,    --interface(s) (either nil, an interface or a table of interfaces)
-false  --if the class is final
-);
+};
 
 return point;

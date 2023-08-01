@@ -139,6 +139,9 @@ interface "ICLoneable" {
 
 ]]
 
+
+
+
 local k = stack();
 k.push(1)
 k.push(5)
@@ -147,10 +150,21 @@ k.push(9)
 k.push("a")
 
 for n, item in pairs(k.values()) do
-	p(item)
+--	p(item)
 end
 
-p(k.pop())
-p(k.pop())
-p(k.pop())
-print(stack.bug)
+--print(luaex._VERSION)
+
+local p1 = point(0, 3);
+local p2 = point(0, 8);
+local p3 = p1 + p2;
+
+--print(type(p1))
+--print(type(p2))
+--print(#class)
+--print(class.args.instances);
+
+
+--print(p1)
+--print(p2)
+--this, spro, pri, pro, pub, otherprint(p3)
