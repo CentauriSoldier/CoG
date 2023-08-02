@@ -13,7 +13,7 @@
 	<li>
 		<b>1.2</b>
 		<br>
-		<p>Refactored to work with the new class system.</p>
+		<p>Updated to work with new LuaEx class system.</p>
 	</li>
 	<li>
 		<b>1.1</b>
@@ -75,16 +75,39 @@ local point = class(
 	end,
 
 	__eq = function(args, this, other)
-		--print(type(spro), type(pri), type(pro), type(pub), type(this), type(other))
-		return type(vRight) == "point" and this.x == vRight.x and this.y == vRight.y;
+		local bRet = false;
+
+		if (type(this) == "point" and type(other) == "point") then
+			local pri = args[nPri];
+			local otherpri = args[nIns][other][nPri];
+			bRet = pri.x == otherpri.x and pri.y == otherpri.y;
+	 	end
+
+		return bRet;
 	end,
 
 	__le = function(args, this, other)
-		return type(vRight) == "point" and this.x <= vRight.x and this.y <= vRight.y;
+		local bRet = false;
+
+		if (type(this) == "point" and type(other) == "point") then
+			local pri = args[nPri];
+			local otherpri = args[nIns][other][nPri];
+			bRet = pri.x <= otherpri.x and pri.y <= otherpri.y;
+	 	end
+
+		return bRet;
 	end,
 
 	__lt = function(args, this, other)
-		return type(vRight) == "point" and this.x < vRight.x and this.y < vRight.y;
+		local bRet = false;
+
+		if (type(this) == "point" and type(other) == "point") then
+			local pri = args[nPri];
+			local otherpri = args[nIns][other][nPri];
+			bRet = pri.x < otherpri.x and pri.y < otherpri.y;
+	 	end
+
+		return bRet;
 	end,
 
 	--[[__mul = function(this, vRight)
@@ -102,13 +125,12 @@ local point = class(
 
 	__sub = function(args, this, other)
 
-		local sType = type(other);
-		print(this)
+		if (type(this) == "point" and type(other) == "point") then
+			local pri = args[nPri];
+			local otherpri = args[nIns][other][nPri];
 
-		if (sType == "point") then
-
-			return point(this.getX() - other.getX(),
-						 this.getY() - other.getY());
+			return point(pri.x - otherpri.x,
+						 pri.y - otherpri.y);
 		end
 
 	end,
@@ -232,10 +254,12 @@ local point = class(
 		@param bDefer boolean Whether or not to return a table of data to be serialized instead of a serialize string (if deferring serializtion to another object).
 		@ret sData StringOrTable The data returned as a serialized table (string) or a table is the defer option is set to true.
 	!]]
-	serialize = function(this, bDefer)
+	serialize = function(this, args, bDefer)
+		local pri = args[nPri];
+
 		local tData = {
-			x = this.x,
-			y = this.y,
+			x = pri.x,
+			y = pri.y,
 		};
 
 		if (not bDefer) then

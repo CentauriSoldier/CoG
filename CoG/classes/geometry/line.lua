@@ -7,18 +7,23 @@
 @license <p>The Unlicense<br>
 <br>
 @moduleid line
-@version 1.1
+@version 1.2
 @versionhistory
 <ul>
 	<li>
-		<b>1.0</b>
+		<b>1.2</b>
 		<br>
-		<p>Created the module.</p>
+		<p>Updated to work with new LuaEx class system.</p>
 	</li>
 	<li>
 		<b>1.1</b>
 		<br>
 		<p>Add serialize and deserialize methods.</p>
+	</li>
+	<li>
+		<b>1.0</b>
+		<br>
+		<p>Created the module.</p>
 	</li>
 </ul>
 @website https://github.com/CentauriSoldier
@@ -34,120 +39,97 @@ local serialize		= serialize;
 local type 			= type;
 local MATH_ARL		= MATH_ARL;
 local MATH_UNDEF	= MATH_UNDEF;
+local nSpro			= class.args.staticprotected;
+local nPri 			= class.args.private;
+local nPro 			= class.args.protected;
+local nPub 			= class.args.public;
+local nIns			= class.args.instances;
 
 --a location for storing temporary points so they don't need to be created every calcualtion
 local tTempPoints = {};
 
-local tProtectedRepo = {};
-
 local function update(this)
-	local tProt = tProtectedRepo[this];
+	local pri = tProtectedRepo[this];
 	--update the line's midpoint
-	tProt.midpoint.x = (tProt.start.x + tProt.stop.x) / 2;
-	tProt.midpoint.y = (tProt.start.y + tProt.stop.y) / 2;
+	pri.midpoint.x = (pri.start.x + pri.stop.x) / 2;
+	pri.midpoint.y = (pri.start.y + pri.stop.y) / 2;
 
 	--update the line's slope, theta and y intercept
-	local nYDelta = tProt.stop.y - tProt.start.y;
-	local nXDelta = tProt.stop.x - tProt.start.x;
-	tProt.slopeIsUndefined = nXDelta == 0;
+	local nYDelta = pri.stop.y - pri.start.y;
+	local nXDelta = pri.stop.x - pri.start.x;
+	pri.slopeIsUndefined = nXDelta == 0;
 
 	--get the quadrant addative for theta
 	local nXIsPos	= nXDelta > 0;
 	local nYIsPos	= nYDelta > 0;
 
 	--determine slope and y-intercept
-	if (tProt.slopeIsUndefined) then
-		tProt.slope 		= MATH_UNDEF;
-		tProt.yIntercept 	= tProt.start.x == 0 and MATH_ARL or MATH_UNDEF;
+	if (pri.slopeIsUndefined) then
+		pri.slope 		= MATH_UNDEF;
+		pri.yIntercept 	= pri.start.x == 0 and MATH_ARL or MATH_UNDEF;
 	else
-		tProt.slope 		= nYDelta / nXDelta;
-		tProt.yIntercept 	= tProt.start.y - tProt.slope * tProt.start.x;
+		pri.slope 		= nYDelta / nXDelta;
+		pri.yIntercept 	= pri.start.y - pri.slope * pri.start.x;
 	end
 
 	--translate end point to the origin (using the object's temp point) in order to find theta
 	local oEnd = tTempPoints[this];
 
-	oEnd.x = tProt.stop.x - tProt.start.x;
-	oEnd.y = tProt.stop.y - tProt.start.y;
+	oEnd.x = pri.stop.x - pri.start.x;
+	oEnd.y = pri.stop.y - pri.start.y;
 
-	tProt.theta = math.deg(math.atan2(oEnd.y, oEnd.x));
+	pri.theta = math.deg(math.atan2(oEnd.y, oEnd.x));
 	--make sure the value is positive
-	tProt.theta = tProt.theta >= 0 and tProt.theta or 360 + tProt.theta;
+	pri.theta = pri.theta >= 0 and pri.theta or 360 + pri.theta;
 
 	--get the standard-form components and set the x intercept
-	tProt.a = nYDelta;--tProt.stop.y - tProt.start.y;
-	tProt.b = tProt.start.x - tProt.stop.x;
-	tProt.c = tProt.a * tProt.start.x + tProt.b * tProt.start.y;
+	pri.a = nYDelta;--pri.stop.y - pri.start.y;
+	pri.b = pri.start.x - pri.stop.x;
+	pri.c = pri.a * pri.start.x + pri.b * pri.start.y;
 
 	--y = mx + b => 0 = mx + b => -b = mx => x = -b/m
-	tProt.xIntercept = tProt.slopeIsUndefined and tProt.start.x or (tProt.slope == 0 and MATH_UNDEF or -tProt.yIntercept / tProt.slope);
+	pri.xIntercept = pri.slopeIsUndefined and pri.start.x or (pri.slope == 0 and MATH_UNDEF or -pri.yIntercept / pri.slope);
 
 
 	--update whether or not the intercepts are defined
-	tProt.xInterceptIsUndefined = rawtype(tProt.xIntercept) == "string";
-	tProt.yInterceptIsUndefined = rawtype(tProt.yIntercept) == "string";
+	pri.xInterceptIsUndefined = rawtype(pri.xIntercept) == "string";
+	pri.yInterceptIsUndefined = rawtype(pri.yIntercept) == "string";
 
 	--update the deltas
-	tProt.deltaX = nXDelta;
-	tProt.deltaY = nYDelta;
+	pri.deltaX = nXDelta;
+	pri.deltaY = nYDelta;
 
 	--update the line's length
-	tProt.length = math.sqrt( (tProt.start.x - tProt.stop.x) ^ 2 + (tProt.start.y - tProt.stop.y) ^ 2);
+	pri.length = math.sqrt( (pri.start.x - pri.stop.x) ^ 2 + (pri.start.y - pri.stop.y) ^ 2);
 end
 
-return class "line" {
+--local spro = args[nSpro];
+--local pri = args[nPri];
+--local pro = args[nPro];
+--local pub = args[nPub];
+--local ins = args[nIns];
 
-	__construct = function(this, tProtected, oStartPoint, oEndPoint, bSkipUpdate)
-		tProtectedRepo[this] = tProtected;
-		local tProt = tProtectedRepo[this];
-
-		tProt.midpoint  = point();
-		tProt.start = type(oStartPoint) == "point" 	and point(oStartPoint.x, 	oStartPoint.y) 	or point();
-		tProt.stop 	= type(oEndPoint)	== "point" 	and point(oEndPoint.x, 		oEndPoint.y) 	or point();
-
-		--default the fields (in case no update is performed)
-		tProt.a 					= 0;
-		tProt.b 					= 0;
-		tProt.c 					= 0;
-		tProt.deltaX 				= 0;
-		tProt.deltaY 				= 0;
-		tProt.length 				= 0;
-		tProt.slope 				= 0;
-		tProt.slopeIsUndefined 		= true;
-		tProt.theta 				= 0;
-		tProt.yIntercept 			= 0;
-		tProt.yInterceptIsUndefined = true;
-		tProt.xIntercept 			= 0;
-		tProt.xInterceptIsUndefined = true;
-		--tProt. = 0;
-
-		--create this line's temp point (used during updates)
-		tTempPoints[this] = point(0, 0);
-
-		if (not bSkipUpdate) then
-			update(this);
-		end
-
-	end,
-
+return class(
+"line",
+{--metamethods
 	__tostring = function(this)
-		local tProt = tProtectedRepo[this];
+		local pri = tProtectedRepo[this];
 		local sRet 	= "";
 
-		sRet = sRet.."start: "..tostring(tProt.start).."\r\n";
-		sRet = sRet.."end: "..tostring(tProt.stop).."\r\n";
-		sRet = sRet.."midpoint: "..tostring(tProt.midpoint).."\r\n";
-		sRet = sRet.."slope: "..tProt.slope.."\r\n";
-		sRet = sRet.."theta: "..tProt.theta.."\r\n";
-		sRet = sRet.."delta x: "..tProt.deltaX.."\r\n";
-		sRet = sRet.."delta y: "..tProt.deltaY.."\r\n";
-		sRet = sRet.."length: "..tProt.length.."\r\n";
-		sRet = sRet.."x intercept: "..tProt.xIntercept.."\r\n";
-		sRet = sRet.."y intercept: "..tProt.yIntercept.."\r\n";
-		sRet = sRet.."A: "..tProt.a.."\r\n";
-		sRet = sRet.."B: "..tProt.b.."\r\n";
-		sRet = sRet.."C: "..tProt.c.."\r\n";
-		sRet = sRet.."Vector: <"..tProt.a..", "..tProt.b..">";
+		sRet = sRet.."start: "..tostring(pri.start).."\r\n";
+		sRet = sRet.."end: "..tostring(pri.stop).."\r\n";
+		sRet = sRet.."midpoint: "..tostring(pri.midpoint).."\r\n";
+		sRet = sRet.."slope: "..pri.slope.."\r\n";
+		sRet = sRet.."theta: "..pri.theta.."\r\n";
+		sRet = sRet.."delta x: "..pri.deltaX.."\r\n";
+		sRet = sRet.."delta y: "..pri.deltaY.."\r\n";
+		sRet = sRet.."length: "..pri.length.."\r\n";
+		sRet = sRet.."x intercept: "..pri.xIntercept.."\r\n";
+		sRet = sRet.."y intercept: "..pri.yIntercept.."\r\n";
+		sRet = sRet.."A: "..pri.a.."\r\n";
+		sRet = sRet.."B: "..pri.b.."\r\n";
+		sRet = sRet.."C: "..pri.c.."\r\n";
+		sRet = sRet.."Vector: <"..pri.a..", "..pri.b..">";
 
 		return sRet;
 	end,
@@ -164,7 +146,68 @@ return class "line" {
 		return tMe.start.x 	== tOther.start.x 	and tMe.start.y == tOther.start.y and
 			   tMe.stop.x 	== tOther.stop.x 	and tMe.stop.y 	== tOther.stop.y;
 	end,
+},
+{--static protected
 
+},
+{--static public
+
+},
+{--private
+	pri.midpoint,
+	pri.start,
+	pri.stop,
+	pri.a,
+	pri.b,
+	pri.c,
+	pri.deltaX,
+	pri.deltaY,
+	pri.length,
+	pri.slope,
+	pri.slopeIsUndefined,
+	pri.theta,
+	pri.yIntercept,
+	pri.yInterceptIsUndefined,
+	pri.xIntercept,
+	pri.xInterceptIsUndefined,
+},
+{--protected
+
+},
+{--public
+
+	line = function(this, tProtected, oStartPoint, oEndPoint, bSkipUpdate)
+		tProtectedRepo[this] = tProtected;
+		local pri = tProtectedRepo[this];
+
+		pri.midpoint  	= point();
+		pri.start 		= type(oStartPoint) == "point" 	and point(oStartPoint.x, 	oStartPoint.y) 	or point();
+		pri.stop 		= type(oEndPoint)	== "point" 	and point(oEndPoint.x, 		oEndPoint.y) 	or point();
+
+		--default the fields (in case no update is performed)
+		pri.a 						= 0;
+		pri.b 						= 0;
+		pri.c 						= 0;
+		pri.deltaX 					= 0;
+		pri.deltaY 					= 0;
+		pri.length 					= 0;
+		pri.slope 					= 0;
+		pri.slopeIsUndefined 		= true;
+		pri.theta 					= 0;
+		pri.yIntercept 				= 0;
+		pri.yInterceptIsUndefined 	= true;
+		pri.xIntercept 				= 0;
+		pri.xInterceptIsUndefined 	= true;
+		--pri. = 0;
+
+		--create this line's temp point (used during updates)
+		tTempPoints[this] = point(0, 0);
+
+		if (not bSkipUpdate) then
+			update(this);
+		end
+
+	end,
 
 	deserialize = function(this, sData)
 		local tData = deserialize.table(sData);
@@ -331,10 +374,10 @@ return class "line" {
 		@ret sData StringOrTable The data, returned as a serialized table (string) or a table is the defer option is set to true.
 	!]]
 	serialize = function(this, bDefer)
-		local tProt = tProtectedRepo[this];
+		local pri = tProtectedRepo[this];
 		--[[local tData = {
-			start 	= tProt.start:seralize(),
-			stop 	= tProt.stop:serialize(),
+			start 	= pri.start:seralize(),
+			stop 	= pri.stop:serialize(),
 		};
 
 		if (not bDefer) then
@@ -342,13 +385,13 @@ return class "line" {
 		end
 
 		return tData;]]
-		return serialize.table(tProt);
+		return serialize.table(pri);
 	end,
 
 	setEnd = function(this, oPoint, bSkipUpdate)
-		local tProt = tProtectedRepo[this];
-		tProt.stop.x = oPoint.x;
-		tProt.stop.y = oPoint.y;
+		local pri = tProtectedRepo[this];
+		pri.stop.x = oPoint.x;
+		pri.stop.y = oPoint.y;
 
 		if (not bSkipUpdate) then
 			update(this);
@@ -357,9 +400,9 @@ return class "line" {
 	end,
 
 	setStart = function(this, oPoint, bSkipUpdate)
-		local tProt = tProtectedRepo[this];
-		tProt.start.x = oPoint.x;
-		tProt.start.y = oPoint.y;
+		local pri = tProtectedRepo[this];
+		pri.start.x = oPoint.x;
+		pri.start.y = oPoint.y;
 
 		if (not bSkipUpdate) then
 			update(this);
@@ -378,5 +421,8 @@ return class "line" {
 	yInterceptIsDefined = function(this)
 		return not tProtectedRepo[this].yInterceptIsUndefined;
 	end,
-
-};
+},
+nil,    --extending class
+nil,    --interface(s) (either nil, an interface or a table of interfaces)
+false  --if the class is final
+);
