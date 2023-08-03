@@ -270,13 +270,14 @@ local point = class(
 	end,
 
 
-	setX = function(this, args)
+	setX = function(this, args, nX)
 		local pri = args[nPri];
 		pri.x = type(nX) == "number" and nX or pri.x;
 		return this;
 	end,
 
-	setY = function(this, args)
+	setY = function(this, args, nY)
+		local pri = args[nPri];
 		pri.y = type(nY) == "number" and nY or pri.y;
 		return this;
 	end,

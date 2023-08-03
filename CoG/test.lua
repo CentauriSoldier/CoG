@@ -34,6 +34,6 @@ require("CoG.init");
 local p = print;
 local t = type;
 
-local p1 = point(2, 7);
-local p2 = point (10, 9);
-p(p2 + p1)
+local l = line(point(-5, 0), point(20, 20));
+
+print(l);

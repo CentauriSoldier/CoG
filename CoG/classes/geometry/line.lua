@@ -48,15 +48,20 @@ local nIns			= class.args.instances;
 --a location for storing temporary points so they don't need to be created every calcualtion
 local tTempPoints = {};
 
-local function update(this)
-	local pri = tProtectedRepo[this];
+local function update(pri)
+	local oMidPoint = pri.midpoint;
+	local nStartX 	= pri.start.getX();
+	local nStartY 	= pri.start.getY();
+	local nStopX  	= pri.stop.getX();
+	local nStopY 	= pri.stop.getY();
+
 	--update the line's midpoint
-	pri.midpoint.x = (pri.start.x + pri.stop.x) / 2;
-	pri.midpoint.y = (pri.start.y + pri.stop.y) / 2;
+	oMidPoint.setX((nStartX + nStopX) / 2);
+	oMidPoint.setY((nStartY + nStopY) / 2);
 
 	--update the line's slope, theta and y intercept
-	local nYDelta = pri.stop.y - pri.start.y;
-	local nXDelta = pri.stop.x - pri.start.x;
+	local nYDelta = nStopX - nStartY;
+	local nXDelta = nStopX - nStartX;
 	pri.slopeIsUndefined = nXDelta == 0;
 
 	--get the quadrant addative for theta
@@ -66,29 +71,29 @@ local function update(this)
 	--determine slope and y-intercept
 	if (pri.slopeIsUndefined) then
 		pri.slope 		= MATH_UNDEF;
-		pri.yIntercept 	= pri.start.x == 0 and MATH_ARL or MATH_UNDEF;
+		pri.yIntercept 	= nStartX == 0 and MATH_ARL or MATH_UNDEF;
 	else
 		pri.slope 		= nYDelta / nXDelta;
-		pri.yIntercept 	= pri.start.y - pri.slope * pri.start.x;
+		pri.yIntercept 	= nStartY - pri.slope * nStartX;
 	end
 
 	--translate end point to the origin (using the object's temp point) in order to find theta
-	local oEnd = tTempPoints[this];
+	local oEnd = tTempPoints[pri];
+--TODO optimize this...no need for oEnd Calls
+	oEnd.setX(nStopX - nStartX);
+	oEnd.setY(nStopY - nStartY);
 
-	oEnd.x = pri.stop.x - pri.start.x;
-	oEnd.y = pri.stop.y - pri.start.y;
-
-	pri.theta = math.deg(math.atan2(oEnd.y, oEnd.x));
+	pri.theta = math.deg(math.atan2(oEnd.getY(), oEnd.getX()));
 	--make sure the value is positive
 	pri.theta = pri.theta >= 0 and pri.theta or 360 + pri.theta;
 
 	--get the standard-form components and set the x intercept
 	pri.a = nYDelta;--pri.stop.y - pri.start.y;
-	pri.b = pri.start.x - pri.stop.x;
-	pri.c = pri.a * pri.start.x + pri.b * pri.start.y;
+	pri.b = nStartX - nStopX;
+	pri.c = pri.a * nStartX + pri.b * nStartY;
 
 	--y = mx + b => 0 = mx + b => -b = mx => x = -b/m
-	pri.xIntercept = pri.slopeIsUndefined and pri.start.x or (pri.slope == 0 and MATH_UNDEF or -pri.yIntercept / pri.slope);
+	pri.xIntercept = pri.slopeIsUndefined and nStartX or (pri.slope == 0 and MATH_UNDEF or -pri.yIntercept / pri.slope);
 
 
 	--update whether or not the intercepts are defined
@@ -100,7 +105,7 @@ local function update(this)
 	pri.deltaY = nYDelta;
 
 	--update the line's length
-	pri.length = math.sqrt( (pri.start.x - pri.stop.x) ^ 2 + (pri.start.y - pri.stop.y) ^ 2);
+	pri.length = math.sqrt( (nStartX - nStopX) ^ 2 + (nStartY - nStopY) ^ 2);
 end
 
 --local spro = args[nSpro];
@@ -112,39 +117,40 @@ end
 return class(
 "line",
 {--metamethods
-	__tostring = function(this)
-		local pri = tProtectedRepo[this];
+	__tostring = function(args, this)
+		local pri = args[nPri];
 		local sRet 	= "";
 
-		sRet = sRet.."start: "..tostring(pri.start).."\r\n";
-		sRet = sRet.."end: "..tostring(pri.stop).."\r\n";
-		sRet = sRet.."midpoint: "..tostring(pri.midpoint).."\r\n";
-		sRet = sRet.."slope: "..pri.slope.."\r\n";
-		sRet = sRet.."theta: "..pri.theta.."\r\n";
-		sRet = sRet.."delta x: "..pri.deltaX.."\r\n";
-		sRet = sRet.."delta y: "..pri.deltaY.."\r\n";
-		sRet = sRet.."length: "..pri.length.."\r\n";
+		sRet = sRet.."start: "		..tostring(pri.start).."\r\n";
+		sRet = sRet.."end: "		..tostring(pri.stop).."\r\n";
+		sRet = sRet.."midpoint: "	..tostring(pri.midpoint).."\r\n";
+		sRet = sRet.."slope: "		..pri.slope.."\r\n";
+		sRet = sRet.."theta: "		..pri.theta.."\r\n";
+		sRet = sRet.."delta x: "	..pri.deltaX.."\r\n";
+		sRet = sRet.."delta y: "	..pri.deltaY.."\r\n";
+		sRet = sRet.."length: "		..pri.length.."\r\n";
 		sRet = sRet.."x intercept: "..pri.xIntercept.."\r\n";
 		sRet = sRet.."y intercept: "..pri.yIntercept.."\r\n";
-		sRet = sRet.."A: "..pri.a.."\r\n";
-		sRet = sRet.."B: "..pri.b.."\r\n";
-		sRet = sRet.."C: "..pri.c.."\r\n";
-		sRet = sRet.."Vector: <"..pri.a..", "..pri.b..">";
+		sRet = sRet.."A: "			..pri.a.."\r\n";
+		sRet = sRet.."B: "			..pri.b.."\r\n";
+		sRet = sRet.."C: "			..pri.c.."\r\n";
+		sRet = sRet.."Vector: <"	..pri.a..", "..pri.b..">";
 
 		return sRet;
 	end,
 
 
-	__len = function(this)
-		return tProtectedRepo[this].length;
+	__len = function(args, this)
+		return args[nPri].length;
 	end,
 
 
-	__eq = function(this, oOther)
-		local tMe 		= tProtectedRepo[this];
-		local tOther 	= tProtectedRepo[oOther];
-		return tMe.start.x 	== tOther.start.x 	and tMe.start.y == tOther.start.y and
-			   tMe.stop.x 	== tOther.stop.x 	and tMe.stop.y 	== tOther.stop.y;
+	__eq = function(args, this, other)
+		local tMe 		= args[nPri];
+		local tOther 	= args[nIns][other][nPri];
+		--TODO optimize this by reducing redundant calls
+		return tMe.start.x 	== tOther.start.getX() 	and tMe.start.getY() 	== tOther.start.getY() and
+			   tMe.stop.x 	== tOther.stop.getX() 	and tMe.stop.getY() 	== tOther.stop.getY();
 	end,
 },
 {--static protected
@@ -154,35 +160,34 @@ return class(
 
 },
 {--private
-	pri.midpoint,
-	pri.start,
-	pri.stop,
-	pri.a,
-	pri.b,
-	pri.c,
-	pri.deltaX,
-	pri.deltaY,
-	pri.length,
-	pri.slope,
-	pri.slopeIsUndefined,
-	pri.theta,
-	pri.yIntercept,
-	pri.yInterceptIsUndefined,
-	pri.xIntercept,
-	pri.xInterceptIsUndefined,
+	midpoint,
+	start,
+	stop,
+	a,
+	b,
+	c,
+	deltaX,
+	deltaY,
+	length,
+	slope,
+	slopeIsUndefined,
+	theta,
+	yIntercept,
+	yInterceptIsUndefined,
+	xIntercept,
+	xInterceptIsUndefined,
 },
 {--protected
 
 },
 {--public
 
-	line = function(this, tProtected, oStartPoint, oEndPoint, bSkipUpdate)
-		tProtectedRepo[this] = tProtected;
-		local pri = tProtectedRepo[this];
+	line = function(this, args, oStartPoint, oEndPoint, bSkipUpdate)
+		local pri = args[nPri];
 
+		pri.start 		= type(oStartPoint) == "point" 	and point(oStartPoint.getX(), 	oStartPoint.getY())	or point();
+		pri.stop 		= type(oEndPoint)	== "point" 	and point(oEndPoint.getX(), 	oEndPoint.getY()) 	or point();
 		pri.midpoint  	= point();
-		pri.start 		= type(oStartPoint) == "point" 	and point(oStartPoint.x, 	oStartPoint.y) 	or point();
-		pri.stop 		= type(oEndPoint)	== "point" 	and point(oEndPoint.x, 		oEndPoint.y) 	or point();
 
 		--default the fields (in case no update is performed)
 		pri.a 						= 0;
@@ -201,25 +206,25 @@ return class(
 		--pri. = 0;
 
 		--create this line's temp point (used during updates)
-		tTempPoints[this] = point(0, 0);
+		tTempPoints[pri] = point(0, 0);
 
 		if (not bSkipUpdate) then
-			update(this);
+			update(pri);
 		end
 
 	end,
 
-	deserialize = function(this, sData)
+	deserialize = function(this, args, sData)
 		local tData = deserialize.table(sData);
 
-		this.start 	= this.start:deserialize(tData.start);
-		this.stop	= this.stop:deserialize(tData.stop);
+		this.start 	= this.start.deserialize(tData.start);
+		this.stop	= this.stop.deserialize(tData.stop);
 		error("UDPATE THIS FUNCTION")
 		return this;
 	end,
 
 
-	getASCII = function(this)
+	getASCII = function(this, args)
 		--TODO shrink the line to proportions of 10s
 		local sRet = "";
 
@@ -245,42 +250,42 @@ return class(
 		return nAngle < 90 and nAngle or 180 - nAngle;
 	end,]]
 
-	getDeltaX = function(this)
-		return tProtectedRepo[this].deltaX;
+	getDeltaX = function(this, args)
+		return args[nPri].deltaX;
 	end,
 
-	getDeltaY = function(this)
-		return tProtectedRepo[this].deltaY;
+	getDeltaY = function(this, args)
+		return args[nPri].deltaY;
 	end,
 
-	getEnd = function(this)
-		return tProtectedRepo[this].stop;
+	getEnd = function(this, args)
+		return args[nPri].stop;
 	end,
 
-	getLength = function(this)
-		return tProtectedRepo[this].length;
+	getLength = function(this, args)
+		return args[nPri].length;
 	end,
 
-	getMidPoint = function(this)
-		return tProtectedRepo[this].midpoint;
+	getMidPoint = function(this, args)
+		return args[nPri].midpoint;
 	end,
 
-	getPointAtDistance = function(this, nDistance)
+	getPointAtDistance = function(this, args, nDistance)
 		--https://stackoverflow.com/questions/1250419/finding-points-on-a-line-with-a-given-distance
 	end,
 
-	getPointOfIntersection = function(this, oOther)
-		local tMe 		= tProtectedRepo[this];
-		local tOther 	= tProtectedRepo[oOther];
+	getPointOfIntersection = function(this, args, other)
+		local tMe 		= args[nPri];
+		local tOther 	= args[nIns][other][nPri];
 		local oRet		= MATH_UNDEF;
+--TODO optimize function calls
+		local A1 = tMe.stop.getY() - tMe.start.getY();
+		local B1 = tMe.start.getX() - tMe.stop.getX();
+		local C1 = A1 * tMe.start.getX() + B1 * tMe.start.getY();
 
-		local A1 = tMe.stop.y - tMe.start.y;
-		local B1 = tMe.start.x - tMe.stop.x;
-		local C1 = A1 * tMe.start.x + B1 * tMe.start.y;
-
-		local A2 = tOther.stop.y - tOther.start.y;
-		local B2 = tOther.start.x - tOther.stop.x;
-		local C2 = A2 * tOther.start.x + B2 * tOther.start.y;
+		local A2 = tOther.stop.getY() - tOther.start.getY();
+		local B2 = tOther.start.getX() - tOther.stop.getX();
+		local C2 = A2 * tOther.start.getX() + B2 * tOther.start.getY();
 
 		local nDeterminate = (A1 * B2 - A2 * B1);
 
@@ -295,62 +300,62 @@ return class(
 	end,
 
 	--get the polar radius
-	getR = function(this)
-		return tProtectedRepo[this].length;
+	getR = function(this, args)
+		return args[nPri].length;
 	end,
 
-	getSlope = function(this)
-		return tProtectedRepo[this].slope;
+	getSlope = function(this, args)
+		return args[nPri].slope;
 	end,
 
 
-	getStart = function(this)
-		return tProtectedRepo[this].start;
+	getStart = function(this, args)
+		return args[nPri].start;
 	end,
 
 	--get the polar angles from the x-axis
-	getTheta = function(this)
-		return tProtectedRepo[this].theta;
+	getTheta = function(this, args)
+		return args[nPri].theta;
 	end,
 
 
-	getXIntercept = function(this)
-		return tProtectedRepo[this].xIntercept;
+	getXIntercept = function(this, args)
+		return args[nPri].xIntercept;
 	end,
 
-	getYIntercept = function(this)
-		return tProtectedRepo[this].yIntercept;
+	getYIntercept = function(this, args)
+		return args[nPri].yIntercept;
 	end,
 
-	intersects = function(this, oOther)
-		local tMe 		= tProtectedRepo[this];
-		local tOther 	= tProtectedRepo[oOther];
+	intersects = function(this, args, other)
+		local tMe 		= args[nPri];
+		local tOther 	= args[nIns][other][nPri];
 
-		local A1 = tMe.stop.y - tMe.start.y;
-		local B1 = tMe.start.x - tMe.stop.x;
+		local A1 = tMe.stop.getY() - tMe.start.getY();
+		local B1 = tMe.start.getX() - tMe.stop.getX();
 
-		local A2 = tOther.stop.y - tOther.start.y;
-		local B2 = tOther.start.x - tOther.stop.x;
+		local A2 = tOther.stop.getY() - tOther.start.getY();
+		local B2 = tOther.start.getX() - tOther.stop.getX();
 
 		return (A1 * B2 - A2 * B1) ~= 0;
 	end,
 
-	isDistinctFrom = function(this, oOther)
+	isDistinctFrom = function(this, args, other)
 
 	end,
 
-	isParrallelTo = function(this, oOther)
-		local tMe 		= tProtectedRepo[this];
-		local tOther 	= tProtectedRepo[oOther];
+	isParrallelTo = function(this, args, other)
+		local tMe 						= args[nPri];
+		local tOther 					= args[nIns][other][nPri];
 		local bBothSlopesAreDefined 	= (not tMe.slopeIsUndefined) and (not tOther.slopeIsUndefined);
 		local bBothSlopesAreUndefined 	= tMe.slopeIsUndefined and tOther.slopeIsUndefined;
 
 		return bBothSlopesAreUndefined or (bBothSlopesAreDefined and (tMe.slope == tOther.slope));
 	end,
 
-	coincidesWith = function(this, oOther)
-		local tMe 							= tProtectedRepo[this];
-		local tOther 						= tProtectedRepo[oOther];
+	coincidesWith = function(this, args, other)
+		local tMe 							= args[nPri];
+		local tOther 						= args[nIns][other][nPri];
 		local bBothSlopesAreDefined 		= (not tMe.slopeIsUndefined) and (not tOther.slopeIsUndefined);
 		local bBothSlopesAreUndefined 		= tMe.slopeIsUndefined and tOther.slopeIsUndefined;
 		local bBothXInterceptsAreDefined 	= (not tMe.xInterceptIsUndefined) and (not tOther.xInterceptIsUndefined);
@@ -373,8 +378,8 @@ return class(
 		@param bDefer boolean Whether or not to return a table of data to be serialized instead of a serialize string (if deferring serializtion to another object).
 		@ret sData StringOrTable The data, returned as a serialized table (string) or a table is the defer option is set to true.
 	!]]
-	serialize = function(this, bDefer)
-		local pri = tProtectedRepo[this];
+	serialize = function(this, args, bDefer)
+		local pri = args[nPri];
 		--[[local tData = {
 			start 	= pri.start:seralize(),
 			stop 	= pri.stop:serialize(),
@@ -388,41 +393,41 @@ return class(
 		return serialize.table(pri);
 	end,
 
-	setEnd = function(this, oPoint, bSkipUpdate)
-		local pri = tProtectedRepo[this];
-		pri.stop.x = oPoint.x;
-		pri.stop.y = oPoint.y;
+	setEnd = function(this, args, oPoint, bSkipUpdate)
+		local pri = args[nPri];
+		pri.stop.setX(oPoint.getX());
+		pri.stop.setY(oPoint.getY());
 
 		if (not bSkipUpdate) then
-			update(this);
+			update(pri);
 		end
 
 	end,
 
 	setStart = function(this, oPoint, bSkipUpdate)
 		local pri = tProtectedRepo[this];
-		pri.start.x = oPoint.x;
-		pri.start.y = oPoint.y;
+		pri.start.setX(oPoint.getX());
+		pri.start.setY(oPoint.getY());
 
 		if (not bSkipUpdate) then
-			update(this);
+			update(pri);
 		end
 
 	end,
 
-	slopeIsDefined = function(this)
-		return not tProtectedRepo[this].slopeIsUndefined;
+	slopeIsDefined = function(this, args)
+		return not args[nPri].slopeIsUndefined;
 	end,
 
-	xInterceptIsDefined = function(this)
-		return not tProtectedRepo[this].xInterceptIsUndefined;
+	xInterceptIsDefined = function(this, args)
+		return not args[nPri].xInterceptIsUndefined;
 	end,
 
-	yInterceptIsDefined = function(this)
-		return not tProtectedRepo[this].yInterceptIsUndefined;
+	yInterceptIsDefined = function(this, args)
+		return not args[nPri].yInterceptIsUndefined;
 	end,
 },
 nil,    --extending class
 nil,    --interface(s) (either nil, an interface or a table of interfaces)
-false  --if the class is final
+false  	--if the class is final
 );

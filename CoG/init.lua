@@ -182,7 +182,7 @@ roll		= require(rStatic			..".roll");
 
 --classes (geometry)
 point 		= require(rClassesGeometry	..".point");
---line 		= require(rClassesGeometry	..".line");
+line 		= require(rClassesGeometry	..".line");
 --shape 		= require(rClassesShapes	..".shape");
 --circle 		= require(rClassesShapes	..".circle");
 --polygon		= require(rClassesShapes	..".polygon");
