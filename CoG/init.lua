@@ -134,6 +134,7 @@ local rClassesAudio 	= rClasses..".audio";
 local rClassesComponent	= rClasses..".component";
 local rClassesGeometry	= rClasses..".geometry";
 local rClassesShapes	= rClassesGeometry..".shapes";
+local rInterfaces		= rCoG..".interfaces";
 local rEnums 			= rCoG..".enums";
 
 --require LuaEx
@@ -180,10 +181,13 @@ name 		= require(rGenerators		..".name"); --TODO change this a less common name!
 scaler		= require(rStatic			..".scaler");
 roll		= require(rStatic			..".roll");
 
+--interfaces
+ishape		= require(rInterfaces		..".ishape");
+
 --classes (geometry)
 point 		= require(rClassesGeometry	..".point");
 line 		= require(rClassesGeometry	..".line");
---shape 		= require(rClassesShapes	..".shape");
+shape 		= require(rClassesShapes	..".shape");
 --circle 		= require(rClassesShapes	..".circle");
 --polygon		= require(rClassesShapes	..".polygon");
 --hexagon		= require(rClassesShapes	..".hexagon");

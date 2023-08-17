@@ -33,7 +33,3 @@ require("CoG.init");
 --============= TEST CODE BELOW =============
 local p = print;
 local t = type;
-
-local l = line(point(-5, 0), point(20, 20));
-
-print(l);
