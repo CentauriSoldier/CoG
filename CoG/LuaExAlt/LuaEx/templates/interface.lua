@@ -3,9 +3,6 @@ local imyinterface = interface(
 {--metamethods
 
 },
-{--static protected
-
-},
 {--static public
 
 },
@@ -21,4 +18,4 @@ local imyinterface = interface(
 nil    --extending interface
 );
 
-return myclass;
+return imyinterface;
