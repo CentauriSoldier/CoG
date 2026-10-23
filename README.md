@@ -1,0 +1,2 @@
+# CoG
+Code of Gaming
