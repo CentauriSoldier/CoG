@@ -50,7 +50,7 @@ local function warn(sMessage)
 
     -- Step 2: contain failures in both fallback creation and host logging.
     pcall(function()
-        local BaseLogClass = require("LuaEx.inc.classes.util.BaseLog");
+        local BaseLogClass = require("LuaEx.classes.util.BaseLog");
 
         if (vLog == nil) then
             vLog = BaseLogClass("BaseMod.log", function()

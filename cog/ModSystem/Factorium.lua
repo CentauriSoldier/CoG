@@ -56,7 +56,7 @@ end
 local function getLog()
     -- Create the file-backed default only when a warning first needs it.
     if (vLog == nil) then
-        local BaseLogClass = require("LuaEx.inc.classes.util.BaseLog");
+        local BaseLogClass = require("LuaEx.classes.util.BaseLog");
         vLog = BaseLogClass("Factorium.log", function()
             -- BaseLog asks for this timestamp when it creates an entry.
             return os.date("%Y-%m-%d %H:%M:%S");
@@ -87,7 +87,7 @@ local function warn(sMessage)
         if (rawtype(log) == "function") then
             log(sWarning);
         else
-            local BaseLogClass = require("LuaEx.inc.classes.util.BaseLog");
+            local BaseLogClass = require("LuaEx.classes.util.BaseLog");
             log.log(sWarning, BaseLogClass.LEVEL.WARNING);
         end
     end);
