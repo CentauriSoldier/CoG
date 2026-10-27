@@ -25,7 +25,7 @@ return class("BaseCard",
     !]]
     __clone = function(this)
         -- Step 1: prevent cloning a subclass into a BaseCard and losing its own state.
-        assert(class.of(this) == BaseCard, "BaseCard subclasses must implement __clone for their own state.");
+        assert(class.getname(this) == class.getname(BaseCard), "BaseCard subclasses must implement __clone for their own state.");
         -- Step 2: reconstruct metadata/flags with fresh base event infrastructure.
         local oCopy = BaseCard(this.getName(), this.getDescription(), this.getRarity(), nil,
                               this.isFaceUp(), this.isEnabled());

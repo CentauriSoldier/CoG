@@ -83,7 +83,7 @@ local cItemSlotSystem = class("ItemSlotSystem",
             local tTouched = {this};
 
             for _, oSlot in ipairs(tSlots) do
-                assert(class.isinstance(oSlot) and class.of(oSlot) == ItemSlot, "Expected an ItemSlot.");
+                assert(class.isinstance(oSlot) and class.getname(oSlot) == class.getname(ItemSlot), "Expected an ItemSlot.");
                 tTouched[#tTouched + 1] = oSlot;
             end
 
@@ -221,7 +221,7 @@ local cItemSlotSystem = class("ItemSlotSystem",
         @desc Searches for the exact slot instance and returns success plus its one-based index or -1.
     !]]
     containsItemSlot = function(this, cdat, oSlot)
-        assert(class.isinstance(oSlot) and class.of(oSlot) == ItemSlot, "Expected an ItemSlot.");
+        assert(class.isinstance(oSlot) and class.getname(oSlot) == class.getname(ItemSlot), "Expected an ItemSlot.");
 
         for nIndex, oExisting in this.eachItemSlot() do
 
@@ -238,7 +238,7 @@ local cItemSlotSystem = class("ItemSlotSystem",
         @desc Compares the requested child position with the exact supplied slot instance.
     !]]
     containsItemSlotAt = function(this, cdat, oSlot, nIndex)
-        assert(class.isinstance(oSlot) and class.of(oSlot) == ItemSlot, "Expected an ItemSlot.");
+        assert(class.isinstance(oSlot) and class.getname(oSlot) == class.getname(ItemSlot), "Expected an ItemSlot.");
 
         return rawequal(this.getItemSlotAt(nIndex), oSlot);
     end,
@@ -248,7 +248,7 @@ local cItemSlotSystem = class("ItemSlotSystem",
         @desc Adopts an independent ItemSlot and validates the complete affected hierarchies.
     !]]
     addItemSlot = function(this, cdat, oSlot)
-        assert(class.isinstance(oSlot) and class.of(oSlot) == ItemSlot, "Expected an ItemSlot.");
+        assert(class.isinstance(oSlot) and class.getname(oSlot) == class.getname(ItemSlot), "Expected an ItemSlot.");
         local bOK, sReason = Rules.adopt(this, oSlot);
 
         return this, bOK, nil, sReason;
@@ -332,7 +332,7 @@ local cItemSlotSystem = class("ItemSlotSystem",
         -- A destination system is a parent container; resolve its leaf slot before transferring.
         local oTarget = oDestination;
 
-        if (class.isinstance(oDestination) and class.ischildorself(class.of(oDestination), ItemSlotSystem)) then
+        if (class.isinstance(oDestination) and class.ischildorself(class.getname(oDestination), ItemSlotSystem)) then
             oTarget = oDestination.getItemSlotAt(nDestinationSlot);
         end
 

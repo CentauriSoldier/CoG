@@ -10,7 +10,7 @@ local class = class;
 !]]
 local function validateCard(oCard)
     -- Check class identity and ancestry before accepting a reference.
-    assert(class.isinstance(oCard) and class.ischildorself(class.of(oCard), BaseCard), "Deck entries must be BaseCard instances.");
+    assert(class.isinstance(oCard) and class.ischildorself(class.getname(oCard), BaseCard), "Deck entries must be BaseCard instances.");
 end
 
 --[[!
@@ -106,7 +106,7 @@ return class("BaseDeck",
     !]]
     __clone = function(this, cdat)
         -- Step 1: prevent a subclass clone from silently discarding subclass state.
-        assert(class.of(this) == BaseDeck, "BaseDeck subclasses must implement __clone for their own state.");
+        assert(class.getname(this) == class.getname(BaseDeck), "BaseDeck subclasses must implement __clone for their own state.");
         local tCards = {};
 
         -- Step 2: clone each card into an independent ordered list.

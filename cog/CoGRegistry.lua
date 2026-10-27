@@ -10,7 +10,7 @@ local function prerequisiteFalse()
 end
 
 local function validateEntry(vEntry)
-    local cObject = class.is(vEntry) and vEntry or class.of(vEntry);
+    local cObject = class.is(vEntry) and vEntry or class.getname(vEntry);
     assert((class.is(vEntry) or class.isinstance(vEntry)) and class.ischildorself(cObject, CoG),
            "CoGRegistry entries must be CoG classes or instances.");
 end
@@ -295,7 +295,7 @@ return class("CoGRegistry",
         @ret string|nil sReason Optional explanation for denial.
     !]]
     allows = function(this, cdat, oObject, ...)
-        local cObject = class.of(oObject);
+        local cObject = class.getname(oObject);
 
         if (not class.isinstance(oObject) or not class.ischildorself(cObject, CoG)) then
             return false, "Object must be a CoG instance.";

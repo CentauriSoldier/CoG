@@ -265,7 +265,7 @@ return class("CoGVehicle",
 
         -- Validate the complete vehicle input before initializing inherited state.
         if (oFuel ~= nil) then
-            assert(class.isinstance(oFuel) and class.ischildorself(class.of(oFuel), Pool),
+            assert(class.isinstance(oFuel) and class.ischildorself(class.getname(oFuel), Pool),
                    "CoGVehicle Fuel must be a Pool instance.");
         end
 

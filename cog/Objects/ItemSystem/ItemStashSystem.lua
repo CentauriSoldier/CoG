@@ -178,7 +178,7 @@ local cItemStashSystem = class("ItemStashSystem",
             oTab = ItemSystem(cdat.pri.maxItemsPerTab, nil, this.getOwner());
         end
 
-        assert(class.isinstance(oTab) and class.ischildorself(class.of(oTab), ItemSystem), "Expected an ItemSystem tab.");
+        assert(class.isinstance(oTab) and class.ischildorself(class.getname(oTab), ItemSystem), "Expected an ItemSystem tab.");
         local bOK, sReason = Rules.adopt(this, oTab);
 
         return this, bOK, bOK and oTab or nil, sReason;
@@ -288,7 +288,7 @@ local cItemStashSystem = class("ItemStashSystem",
         -- Resolve a stash destination to a leaf inventory before invoking the shared transfer rules.
         local oTarget = oDestination;
 
-        if (class.isinstance(oDestination) and class.ischildorself(class.of(oDestination), ItemStashSystem)) then
+        if (class.isinstance(oDestination) and class.ischildorself(class.getname(oDestination), ItemStashSystem)) then
             oTarget = oDestination.getTab(nTab);
         end
 
@@ -340,7 +340,7 @@ local cItemStashSystem = class("ItemStashSystem",
         -- Resolve a stash destination to a leaf inventory before invoking the shared transfer rules.
         local oTarget = oDestination;
 
-        if (class.isinstance(oDestination) and class.ischildorself(class.of(oDestination), ItemStashSystem)) then
+        if (class.isinstance(oDestination) and class.ischildorself(class.getname(oDestination), ItemStashSystem)) then
             oTarget = oDestination.getTab(nTab);
         end
 

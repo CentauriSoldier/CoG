@@ -196,7 +196,7 @@ end
     @desc Require a CoGItem or subclass instance before calling item-specific methods.
 !]]
 function M.item(oItem)
-    assert(class.isinstance(oItem) and class.ischildorself(class.of(oItem), CoGItem), "Expected a CoGItem instance.");
+    assert(class.isinstance(oItem) and class.ischildorself(class.getname(oItem), CoGItem), "Expected a CoGItem instance.");
 end
 
 --[[!

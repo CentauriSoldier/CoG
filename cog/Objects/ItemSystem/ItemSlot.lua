@@ -84,7 +84,7 @@ local cItemSlot = class("ItemSlot",
         if (vAllowedItems == nil) then
             oRegistry = CoGRegistry({CoGItem});
         elseif (class.isinstance(vAllowedItems)) then
-            assert(class.ischildorself(class.of(vAllowedItems), CoGRegistry), "Expected an CoGRegistry.");
+            assert(class.ischildorself(class.getname(vAllowedItems), CoGRegistry), "Expected an CoGRegistry.");
             oRegistry = vAllowedItems;
         else
             oRegistry = CoGRegistry(Rules.array(vAllowedItems));
@@ -336,7 +336,7 @@ local cItemSlot = class("ItemSlot",
         @desc Exchanges complete slot contents atomically; both slots must accept the resulting contents.
     !]]
     swapWith = function(this, cdat, oOther)
-        assert(class.isinstance(oOther) and class.of(oOther) == ItemSlot, "Expected an ItemSlot.");
+        assert(class.isinstance(oOther) and class.getname(oOther) == class.getname(ItemSlot), "Expected an ItemSlot.");
         local bOK, sReason = Rules.swap(this, oOther);
 
         return this, bOK, nil, sReason;

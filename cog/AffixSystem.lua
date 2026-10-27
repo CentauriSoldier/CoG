@@ -49,7 +49,7 @@ end
     @vis Private
 !]]
 local function registerOwnerClass(sName)
-    local cOwner = class.getbyname(sName);
+    local cOwner = class.getbyname(sName, _ENV);
     assert(cOwner and class.ischildorself(cOwner, CoGObject), "Unknown affix owner class.");
 
     if (type(CoGItem) == "class" and class.ischildorself(cOwner, CoGItem)) then
@@ -434,12 +434,13 @@ local _tEntryMethods = {
     --[[!
         @fqxn CoG.AffixSystem.Affix.Methods.isCompatibleWithClass
         @pulsarlua function AffixSystemEntry.isCompatibleWithClass
-        @desc Tests a listed compatible class or its descendant. Invalid class arguments return false.
-        @param class cClass Candidate owner class.
+        @desc Tests a listed compatible class or its descendant by class object or registered name.
+        Invalid class arguments return false. Name queries do not expose class objects.
+        @param class|string cClass Candidate owner class or registered name.
         @ret boolean bResult True when the documented condition holds.
     !]]
     isCompatibleWithClass = function(oAffix, cClass)
-        if (class.is(cClass)) then
+        if (class.is(cClass) or (rawtype(cClass) == "string" and class.exists(cClass))) then
             for _, cAllowed in ipairs(entry(oAffix).classes) do
                 if (class.ischildorself(cClass, cAllowed)) then
                     return true;
@@ -1164,7 +1165,8 @@ _cSystem = class("AffixSystem",
         local pri = cdat.pri;
         assert(oOwner == nil or type.isCoGObject(oOwner), "AffixSystem owner must be a CoGObject.");
         assert(bOwnerLocked == nil or rawtype(bOwnerLocked) == "boolean", "Invalid owner lock.");
-        local sOwnerClass = oOwner and bOwnerLocked and class.getname(class.of(oOwner)) or "";
+        -- Ownership needs only a name; do not recover an out-of-scope class object.
+        local sOwnerClass = oOwner and bOwnerLocked and class.getname(oOwner) or "";
         pri.token = setmetatable({ownerClass = sOwnerClass, locked = bOwnerLocked == true}, _tTokenMeta);
         pri.events = eventrix(sEnvironment);
         pri.rarity = eRarity or (oOwner and oOwner.getRarity()) or Rarity.LEVEL[1];
@@ -1229,7 +1231,7 @@ _cSystem = class("AffixSystem",
             end
 
             for _, tRecord in ipairs(pri.records) do
-                if (not tRecord.affix.isCompatibleWithClass(class.of(oOwner)) or
+                if (not tRecord.affix.isCompatibleWithClass(class.getname(oOwner)) or
                     tRecord.affix.getTier().id > Rarity.getMaxAffixTier(eRarity).id) then
 
                     return this, false, nil, "Owner cannot accommodate an applied affix.";
@@ -1244,7 +1246,7 @@ _cSystem = class("AffixSystem",
         -- reconnects them. Standalone systems retain their transferable ownership.
         if (oOwner and oOwner.ownsAffixSystem(this)) then
             pri.token.locked = true;
-            pri.token.ownerClass = class.getname(class.of(oOwner));
+            pri.token.ownerClass = class.getname(oOwner);
             registerOwnerClass(pri.token.ownerClass);
         end
 
@@ -1406,7 +1408,7 @@ _cSystem = class("AffixSystem",
             return false, "AffixSystem has no owner.";
         end
 
-        if (not oAffix.isCompatibleWithClass(class.of(oOwner))) then
+        if (not oAffix.isCompatibleWithClass(class.getname(oOwner))) then
             return false, "Affix is incompatible with its owner.";
         end
 

@@ -177,7 +177,7 @@ return class("CoG",
 {},--PRIVATE
 {--PROTECTED
     CoG = function(this, cdat)
-        --print(class.of(this))
+        --print(class.getname(this))
     end,
 },
 {--PUBLIC

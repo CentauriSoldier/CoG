@@ -307,7 +307,7 @@ local function ensureNode(cClass)
     if (cClass == CoG) then
         tHierarchy[CoG] = tNode;
     else
-        local cParent = class.getparent(cClass);
+        local cParent = class.getbyname(class.getparentname(cClass), _ENV);
         ensureNode(cParent)[sChildren][cClass] = tNode;
     end
 
@@ -347,7 +347,7 @@ local function inspectClass(cClass)
             break;
         end
 
-        cAncestor = class.getparent(cAncestor);
+        cAncestor = class.getbyname(class.getparentname(cAncestor), _ENV);
     end
 
     if (tAncestors[1] ~= CoG) then
@@ -607,7 +607,7 @@ end
 !]]
 local function importMod(tInput)
     -- Step 1: adapt BaseMod instances to the returned-table metadata format.
-    if (class.isinstance(tInput) and class.ischildorself(class.of(tInput), BaseMod)) then
+    if (class.isinstance(tInput) and class.ischildorself(class.getname(tInput), BaseMod)) then
         local bOK, tInfo, sReason = pcall(tInput.getInfo);
 
         if (not bOK) then

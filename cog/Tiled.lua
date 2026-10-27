@@ -174,7 +174,7 @@ return class("Tiled",
     !]]
     __clone = function(this, cdat)
 
-        assert(class.of(this) == Tiled, "Tiled subclasses must define their own clone.");
+        assert(class.getname(this) == class.getname(Tiled), "Tiled subclasses must define their own clone.");
         local oCopy = Tiled();
         if (cdat.pri.source ~= "") then
             oCopy.parse(cdat.pri.source, cdat.pri.path, function(sPath)

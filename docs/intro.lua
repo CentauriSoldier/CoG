@@ -1,6 +1,5 @@
 return [[
 <h1>CoG — Code of Gaming</h1>
-<h2>Version 2.1</h2>
 <p>CoG supplies game systems for Lua: resources, progression, items and equipment,
 rarity and affixes, targeting and statuses, cards, weighted navigation, Tiled
 maps and moddable content. Build your own gameplay classes on its shared object
@@ -19,27 +18,5 @@ project&#39;s override file.</p>
 <p>Browse the <a href="#CoG">CoG API</a> in the navigation tree for component contracts,
 constructors, methods and examples.</p>
 
-<details>
-<summary>View changelog</summary>
-<h1>CoG changelog</h1>
-<h2>v2.1</h2>
-<h3>Added</h3>
-<ul>
-<li>Standalone <code>cog.load</code> initializer with separate loading after LuaEx.</li>
-<li>Versioned documentation introduction and generated HTML API reference for GitHub Pages.</li>
-<li>A repository overview with gameplay examples and a dark pixel-art banner.</li>
-</ul>
-<h3>Changed</h3>
-<ul>
-<li>Configuration is assembled and locked before the CoG class is declared, then exposed as public static <code>CoG.config</code>.</li>
-<li><code>require(&quot;cog.config&quot;)</code> returns the same read-only configuration table.</li>
-<li>CoG module imports use the standalone <code>cog.*</code> namespace.</li>
-<li>Initialization requires <code>LUAEX_INIT == true</code>; LuaEx remains a dependency.</li>
-</ul>
-<h3>Fixed</h3>
-<ul>
-<li>Internal AStar documentation links now use <code>CoG.*</code> FQXNs without the former LuaEx ownership prefix.</li>
-</ul>
 
-</details>
 ]];

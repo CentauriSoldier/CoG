@@ -713,7 +713,6 @@ end
         <li><p><b>-</b><em>(unary minus)</em>: will set the object's CURRENT value to the value of MIN.</p></li>
         <li><p><b>#</b>: will set the object's CURRENT value to the available capacity and return that current value.</p></li>
     </ul>
-    @version 2.1
     @note Arithmetic operators update the left Pool in place and return it. Unary minus empties it; length fills available capacity and returns current. Numbers on the left are not supported.
     @ex
     local oPool = Pool(100, 40);

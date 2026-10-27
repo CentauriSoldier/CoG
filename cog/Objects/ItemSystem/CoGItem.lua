@@ -26,7 +26,7 @@ local function acceptObject(vInput, cExpected, defaultFactory, sField)
         return defaultFactory();
     end
 
-    assert(class.isinstance(vInput) and class.ischildorself(class.of(vInput), cExpected),
+    assert(class.isinstance(vInput) and class.ischildorself(class.getname(vInput), cExpected),
            "CoGItem "..sField.." must be an instance of "..class.getname(cExpected)..".");
 
     return vInput;
@@ -93,7 +93,7 @@ local cCoGItem = class("CoGItem",
         @desc Validates a CoG host and iterates a copied list of its attached item references.
     !]]
     eachAttachmentOf = function(oHost)
-        assert(class.isinstance(oHost) and class.ischildorself(class.of(oHost), CoG), "Attachment host must be a CoG instance.");
+        assert(class.isinstance(oHost) and class.ischildorself(class.getname(oHost), CoG), "Attachment host must be a CoG instance.");
 
         return ipairs(Rules.attachments(oHost));
     end,
@@ -128,7 +128,7 @@ local cCoGItem = class("CoGItem",
         local pri = tState.pri;
 
         -- A concrete subclass may be local; register its existing generated deserializer.
-        Rules.registerPersistence(class.of(pri.identity.object), true);
+        Rules.registerPersistence(class.getbyname(class.getname(pri.identity.object), _ENV), true);
 
         -- Wrap registries so saved prerequisites survive the class snapshot's method-field exclusions.
         for sField, vValue in pairs(tState.pro) do
@@ -340,9 +340,9 @@ local cCoGItem = class("CoGItem",
         if (vExclusiveIn == nil) then
             tFields.Exclusive_In = ClassRegistry({ItemSlotSystem, ItemSystem, ItemStashSystem});
         elseif (class.isinstance(vExclusiveIn) and
-                (class.ischildorself(class.of(vExclusiveIn), ItemSlotSystem) or
-                 class.ischildorself(class.of(vExclusiveIn), ItemSystem) or
-                 class.ischildorself(class.of(vExclusiveIn), ItemStashSystem))) then
+                (class.ischildorself(class.getname(vExclusiveIn), ItemSlotSystem) or
+                 class.ischildorself(class.getname(vExclusiveIn), ItemSystem) or
+                 class.ischildorself(class.getname(vExclusiveIn), ItemStashSystem))) then
             tFields.Exclusive_In = ClassRegistry({vExclusiveIn});
         else
             tFields.Exclusive_In = acceptObject(vExclusiveIn, ClassRegistry, defaultRegistry, "Exclusive_In");
@@ -355,7 +355,7 @@ local cCoGItem = class("CoGItem",
         assert(bInimitable == nil or rawtype(bInimitable) == "boolean", "Inimitable must be a boolean or nil.");
 
         if (oAttachedTo ~= nil and oAttachedTo ~= null) then
-            assert(class.isinstance(oAttachedTo) and class.ischildorself(class.of(oAttachedTo), CoG),
+            assert(class.isinstance(oAttachedTo) and class.ischildorself(class.getname(oAttachedTo), CoG),
                    "Attached_To must be a CoG instance or null.");
         end
 
