@@ -120,6 +120,7 @@ local tConfig = {
     app           = require(_sConfigModule..".app"),
     AStar         = require(_sConfigModule..".AStar"),
     Pool          = require(_sConfigModule..".Pool"),
+    Scaler        = require(_sConfigModule..".Scaler"),
     CoGObject    = require(_sConfigModule..".CoGObject"),
     CoGVehicle   = require(_sConfigModule..".CoGVehicle"),
     BaseMod       = require(_sConfigModule..".BaseMod"),
@@ -127,6 +128,21 @@ local tConfig = {
     StatusTracker = require(_sConfigModule..".StatusTracker"),
 };
 tConfig = applySettings(copySettings(tConfig, {}, false), tUserConfig, {}, {});
+
+-- Reject incomplete timer adapters during configuration, rather than failing
+-- later while an application is adjusting its interface.
+type.assert.custom(tConfig.Scaler, "table", "CoG Scaler config must be a table.");
+type.assert.custom(tConfig.Scaler.Debounce, "table", "CoG Scaler.Debounce must be a table.");
+local tDebounce = tConfig.Scaler.Debounce;
+assert(rawtype(tDebounce.DelayMS) == "number" and tDebounce.DelayMS == tDebounce.DelayMS
+    and tDebounce.DelayMS >= 0 and tDebounce.DelayMS < math.huge,
+    "Scaler Debounce.DelayMS must be finite and nonnegative.");
+local bSchedule = rawtype(tDebounce.Schedule) == "function";
+local bCancel = rawtype(tDebounce.Cancel) == "function";
+local bScheduleUnset = tDebounce.Schedule == nil or type.isnull(tDebounce.Schedule);
+local bCancelUnset = tDebounce.Cancel == nil or type.isnull(tDebounce.Cancel);
+assert((bSchedule and bCancel) or (bScheduleUnset and bCancelUnset),
+    "Scaler debounce requires both Schedule and Cancel functions, or neither.");
 
 -- StatusTracker is an application-defined hierarchy, not an overlay of fixed default keys.
 if (tUserConfig.StatusTracker ~= nil) then

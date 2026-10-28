@@ -235,6 +235,97 @@ same reference. `TIER` lives under `CoG.config.TIER`. The
 [config assembler](cog/config.lua), [bundled settings](cog/config/) and
 [loader](cog/load.lua) document the remaining options.
 
+### Scaler callbacks and optional debounce
+
+Scalers work immediately with no timer setup. By default, each adjustment calls
+Start and End synchronously. Debounce groups repeated adjustments into one
+burst: Start fires once, and End fires after the latest adjustment has been quiet
+for `DelayMS`. Geometry is always calculated and returned immediately.
+
+To enable debounce globally, add this section to your project configuration.
+`HostTimers` below is a placeholder for your application's timer service; replace
+these two calls with its actual scheduling and cancellation functions:
+
+```lua
+return {
+    Scaler = {
+        Debounce = {
+            DelayMS = 100,
+            Schedule = function(nDelayMS, fCallback)
+                return HostTimers.after(nDelayMS, fCallback);
+            end,
+            Cancel = function(vHandle)
+                HostTimers.cancel(vHandle);
+            end,
+        },
+    },
+};
+```
+
+CoG supplies no timer dependency. `Schedule` must return a non-nil cancellation
+handle and defer the callback until later, on the application's Lua thread.
+`Cancel` must cancel that handle. Supply both functions or neither. A delay of
+zero, or no adapter functions, keeps callbacks synchronous.
+
+Each scaler inherits these defaults and owns its pending timers. Pass an optional
+sixth constructor argument to override the delay or disable debounce:
+
+```lua
+local oScaler = scaler(1920, 1080, 1280, 720, false); -- Inherit defaults.
+local oSlower = scaler(1920, 1080, 1280, 720, false, {
+    Debounce = {DelayMS = 200}, -- Inherit the global adapter.
+});
+local oImmediate = scaler(1920, 1080, 1280, 720, false, {
+    Debounce = false,
+});
+
+oScaler.setOnResizeStart(function(oSource, tEvent)
+    -- Prepare for a burst of size calculations.
+end);
+
+oScaler.setOnResizeEnd(function(oSource, tEvent)
+    local tSize = tEvent.Output;
+    -- Apply tSize.width and tSize.height to your application here.
+end);
+
+local tSize = oScaler.adjustSize(640, 480); -- Result available now.
+```
+
+`setOnMoveStart` and `setOnMoveEnd` work the same way. Every callback receives
+the scaler and an event snapshot. `Input` contains the current call's geometry;
+`InitialInput` contains the burst's first geometry. `Output` is present on End.
+`Screen` contains width/height; `Viewport` contains width/height/x/y. `Operation`
+is `"move"` or `"resize"`, `Phase` is `"start"` or `"end"`, and `Method` names
+the adjustment method.
+
+`adjustPos` notifies move callbacks, `adjustSize` notifies resize callbacks, and
+`adjust` notifies both. Move and resize have independent quiet periods, even on
+the same scaler. These events describe adjustment calculations; connect native
+window events through your application. A nested calculation inside a callback
+returns geometry but does not recursively notify that same operation.
+
+Settings can also change after construction:
+
+```lua
+oScaler.setDebounce({DelayMS = 150}); -- Override global defaults.
+oScaler.setDebounce(false);          -- Disable for this instance.
+oScaler.setDebounce(nil);            -- Restore global defaults.
+local bEnabled = oScaler.isDebounceEnabled();
+local tSettings = oScaler.getDebounce(); -- A detached copy.
+oScaler.cancelPendingCallbacks();    -- Cancel bursts before discarding a scaler.
+oScaler.setOnResizeEnd(nil);         -- Reset this callback to a no-op.
+```
+
+Changing debounce settings cancels pending bursts without firing End. Cancelled,
+late or duplicate timer callbacks cannot deliver stale events. Callback and timer
+adapter errors propagate to the caller (or the host timer's callback runner).
+No timer is scheduled when both callbacks for an operation are unset.
+
+Regression coverage lives in `tests/scaler_regression.lua`. From the CoG repository,
+run `lua tests/scaler_regression.lua /path/to/LuaEx`, then repeat with `global`
+as the final argument to exercise configuration inheritance. The LuaEx path must
+point to the folder containing the `LuaEx` module directory (`LuaEx/load.lua`).
+
 ## Documentation
 
 Individual modules contain their

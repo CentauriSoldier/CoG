@@ -6,6 +6,10 @@
 - Standalone `cog.load` initializer with separate loading after LuaEx.
 - Versioned documentation introduction and generated HTML API reference for GitHub Pages.
 - A repository overview with gameplay examples and a dark pixel-art banner.
+- Scaler move and resize Start/End callbacks with final getters and setters; passing nil to a setter restores its no-op callback.
+- Optional host-provided scaler debounce through CoG configuration, with per-instance overrides, independent move/resize timers, and pending-callback cancellation. Debounce is disabled by default.
+- Scaler callback event snapshots containing input/output geometry, screen dimensions, and viewport information.
+- Scaler debounce usage examples and regression coverage for bundled defaults and global configuration overrides.
 
 ### Changed
 - Configuration is assembled and locked before the CoG class is declared, then exposed as public static `CoG.config`.
@@ -13,9 +17,13 @@
 - CoG module imports use the standalone `cog.*` namespace.
 - Initialization requires `LUAEX_INIT == true`; LuaEx remains a dependency.
 - **Pool** documentation identified the class as version **2.1**.
+- Scaler adjustment methods invoke the corresponding Start/End callbacks while returning calculated geometry immediately.
+- Replaced scaler `getViewport()` with `getViewportDimensions()`, `getViewportSize()`, and `getViewportPosition()`.
+- Removed the old combined `onResize()` and `setOnResizeCallback()` APIs in favor of separate resize Start/End callbacks.
 
 ### Fixed
 - Internal AStar documentation links now use `CoG.*` FQXNs without the former LuaEx ownership prefix.
+- Scaler `getScreenSize()` returns screen dimensions rather than fitted viewport dimensions.
 
 ---
 
