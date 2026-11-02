@@ -1,6 +1,6 @@
 --[[!
     @fqxn CoG.Config
-    @pulsarlua table CoG.config
+    @pulsarlua table CoGBase.config
     @desc Assembles bundled CoG defaults, then overlays an optional user config.lua.
     The loader always calls this bundled file. A positive config-parent level locates
     the user's config.lua above the Cog root directory; zero uses bundled defaults alone.
@@ -8,9 +8,9 @@
     Ordinary overrides apply recursively to existing keys only, including list indices.
     A user table whose metatable contains __purge = true replaces that branch with its supplied
     contents, allowing new keys and shorter lists. The marker is not runtime data.
-    StatusTracker is an application-defined hierarchy and replaces its section in full.
+    StatusTracker effect declarations belong in the selected CoG.EFFECT enum.
     The final table and its ordinary subtables are read-only at runtime.
-    TIER is a private enum stored in this table, not registered globally. Project
+    TIER references the canonical CoG.TIER declaration loaded before classes. Project
     overrides load first so the selected tier is available to dependent defaults.
     The bundled Rarity section receives that selected enum explicitly.
 !]]
@@ -98,10 +98,10 @@ local tUserConfig = {};
 if (_pUserDirectory ~= nil) then
     local sUserFilename = _tConfigOptions.userFilename or "config.lua";
     local pUserConfigFile = _pUserDirectory.."/"..sUserFilename;
-    -- CoG.purge is needed before the class exists. Expose the same helper only
+    -- CoGBase.purge is needed before the class exists. Expose the same helper only
     -- inside this configuration chunk; no temporary global namespace is created.
     local tUserEnvironment = setmetatable({
-        CoG = table.readonly({purge = _tConfigOptions.purge}),
+        CoGBase = table.readonly({purge = _tConfigOptions.purge}),
     }, {__index = _G});
     local userConfigLoader, sError = loadfile(pUserConfigFile, "t", tUserEnvironment);
     assert(userConfigLoader, "Unable to load CoG user config at '"..pUserConfigFile.."': "..tostring(sError));
@@ -109,10 +109,16 @@ if (_pUserDirectory ~= nil) then
     type.assert.custom(tUserConfig, "table", "CoG user config at '"..pUserConfigFile.."' must return a table.");
 end
 
--- Typed enum overrides retain identity; do not deep-merge their member objects.
+-- Declaration identities are fixed before classes; configuration selects settings.
+assert(not (rawtype(tUserConfig.Rarity) == "table" and tUserConfig.Rarity.LEVEL ~= nil),
+    "Rarity config LEVEL declarations belong in Rarity.lxc; use NAME for display labels.");
+assert(not (rawtype(tUserConfig.CoGVehicle) == "table" and tUserConfig.CoGVehicle.COMPONENT ~= nil),
+    "CoGVehicle COMPONENT declarations belong in CoGVehicle.lxc, not configuration.");
+assert(tUserConfig.StatusTracker == nil,
+    "StatusTracker effect declarations belong in CoG.EFFECT, not configuration.");
 local eTier = tUserConfig.TIER;
 if (eTier == nil) then eTier = require(_sConfigModule..".TIER"); end
-assert(enum.isenum(eTier), "CoG config TIER must be an enum collection.");
+assert(rawequal(eTier, CoG.TIER), "CoG config TIER must reference the declared CoG.TIER enum.");
 
 -- Always load framework-adjacent defaults; Rarity must use the selected tier.
 local tConfig = {
@@ -128,6 +134,10 @@ local tConfig = {
     StatusTracker = require(_sConfigModule..".StatusTracker"),
 };
 tConfig = applySettings(copySettings(tConfig, {}, false), tUserConfig, {}, {});
+assert(tConfig.Rarity.LEVEL == nil,
+    "Rarity config LEVEL declarations belong in Rarity.lxc; use NAME for display labels.");
+assert(tConfig.CoGVehicle.COMPONENT == nil,
+    "CoGVehicle COMPONENT declarations belong in CoGVehicle.lxc, not configuration.");
 
 -- Reject incomplete timer adapters during configuration, rather than failing
 -- later while an application is adjusting its interface.
@@ -144,10 +154,8 @@ local bCancelUnset = tDebounce.Cancel == nil or type.isnull(tDebounce.Cancel);
 assert((bSchedule and bCancel) or (bScheduleUnset and bCancelUnset),
     "Scaler debounce requires both Schedule and Cancel functions, or neither.");
 
--- StatusTracker is an application-defined hierarchy, not an overlay of fixed default keys.
-if (tUserConfig.StatusTracker ~= nil) then
-    type.assert.custom(tUserConfig.StatusTracker, "table", "CoG StatusTracker config must be a table.");
-    tConfig.StatusTracker = copySettings(tUserConfig.StatusTracker, {}, true);
-end
 -- Keep typed enums intact while locking ordinary configuration tables.
 return table.readonly(tConfig);
+
+
+

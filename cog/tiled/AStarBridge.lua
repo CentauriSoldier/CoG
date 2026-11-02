@@ -357,7 +357,7 @@ function Bridge.create(tMap, sName, oSystem, tOptions)
     end
     table.sort(tAspects);
     if (oSystem == nil) then
-        oSystem = AStar(table.unpack(tAspects));
+        oSystem = CoG.AStar(table.unpack(tAspects));
     else
         type.assert.custom(oSystem, "AStar");
         for _, sAspect in ipairs(tAspects) do
@@ -368,7 +368,7 @@ function Bridge.create(tMap, sName, oSystem, tOptions)
 
     local tConfigs = {};
     for _, tLayer in ipairs(tLayers) do
-        tConfigs[#tConfigs + 1] = AStar.LayerConfig(tLayer.name, table.unpack(tAspects));
+        tConfigs[#tConfigs + 1] = CoG.AStar.LayerConfig(tLayer.name, table.unpack(tAspects));
     end
     local tLayout = {originX = tBounds.x, originY = tBounds.y};
     local nType = ASTAR_MAP_TYPE_SQUARE;

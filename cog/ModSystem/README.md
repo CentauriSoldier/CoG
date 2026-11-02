@@ -5,15 +5,38 @@ references. The host decides mod order and which capabilities to expose.
 
 ## Class contract
 
-Participating CoG classes declare public static `Blueprint` (defaults),
-`validateBlueprint(bp)` (returns `true` or `false, reason`), and
-`fromBlueprint(bp, context)` (constructs the class's object).
+LuaEx discovers `CoG.Factorium` from `Factorium.lxc`; no loader entry or
+short alias is required. Participating classes descend from `CoG.CoGBase`.
+After discovery, register each participating class with its own contract:
 
-Call `Factorium.registerClass(cClass)` once the class is built, for example
-from its static constructor. Registration caches the class contract and
-ancestor member references. LuaEx static members are not inherited, so each
-participating class declares all three. Nonparticipating ancestors can omit
-them. Every available ancestor validator runs, in ancestry order.
+```lua
+local dragonContract = {
+    Blueprint = { health = 500, element = "fire" },
+    validateBlueprint = function(bp)
+        return bp.health > 0, "health must be positive"
+    end,
+    fromBlueprint = function(bp, context)
+        return Dragon(bp, context)
+    end,
+}
+assert(CoG.Factorium.registerClass(Dragon, dragonContract))
+```
+
+This explicit contract replaces discovery of same-named static members on every
+class: LXC inherits statics and forbids hiding them. Existing participating code
+must supply the second registration argument. Retain the contract's factory for
+construction; Factorium validates its presence but never calls it or exposes it.
+The host can also expose that function through its own class API.
+
+Register all participating ancestors before importing their blueprints. Parent
+and child registration order does not matter; nonparticipating ancestors
+contribute no defaults or validator. Defaults merge and validators run from
+`CoG.CoGBase` down to the exact target class, including across nonparticipating
+intermediate classes. Registering an ancestor later affects subsequent imports,
+not already compiled definitions. Successful and failed registration answers are
+cached by class identity. Registration retains the defaults table and validator
+function references; later default-content edits are rechecked on import, while
+replacing the contract's member references does not change the cached contract.
 
 Tables merge recursively, including numeric keys. Missing fields inherit;
 `false`, zero, and empty strings override. Extra fields remain unless a
@@ -26,6 +49,7 @@ closures and are not executed by compilation.
 ## Host workflow
 
 ```lua
+local Factorium = CoG.Factorium
 Factorium.setLog(programLog) -- Optional object with .log, or logging function.
 Factorium.setEnvironment(modEnvironment) -- Optional; starts as {}.
 Factorium.loadMod("mods/CoolDragons.lua")
@@ -34,7 +58,7 @@ Factorium.runMods()
 Factorium.finalizeImports()
 
 local bp, modID = Factorium.getBlueprint(Dragon, "fire_dragon")
-local dragon = Dragon.fromBlueprint(bp, spawnContext)
+local dragon = dragonContract.fromBlueprint(bp, spawnContext)
 ```
 
 `loadMod` compiles a text file using the current environment. `runMods`
@@ -43,7 +67,8 @@ Replacing the environment affects subsequent loads, not existing functions.
 There is no fallback to host globals or execution-limit mechanism.
 
 Without a supplied log, Factorium lazily creates a `BaseLog` at `Factorium.log`
-in the working directory. `getWarnings()` also returns retained warnings.
+in the working directory when LuaEx utility classes are initialized (load level
+4). Callback logging works at level 3. `getWarnings()` also returns retained warnings.
 Logging failures cannot stop imports.
 
 ## Returned mod table
@@ -118,8 +143,16 @@ has been replaced by class registration, mod import, and class-scoped queries.
 
 ## Verification
 
-From the repository root, run the bundled Node executable with
-`examples/api/workbench/verify-factorium.cjs`. It runs
-`tests/factorium_regression.lua` and `tests/basemod_regression.lua` in the bundled
-Lua 5.4 runtime, including
-default logging, BaseMod integration, lifecycle changes and load environments.
+From the CoG repository root, use Lua 5.4:
+
+```text
+lua54 tests/factorium_regression.lua defaults
+lua54 tests/factorium_regression.lua logging
+lua54 tests/factorium_regression.lua archive
+```
+
+The archive mode runs the unchanged repository algorithms with a class-reflection
+adapter for the native test fixtures. Its catalog/status fingerprint must match
+the native modes across the same 240-step import/activation/removal replay.
+The logging mode exercises native BaseLog through an in-memory file adapter.
+The original source is retained at `legacy/cog/ModSystem/Factorium.lua`.

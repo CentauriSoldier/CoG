@@ -6,7 +6,7 @@
 !]]
 local pSource = debug.getinfo(1, "S").source:sub(2):gsub("\\", "/");
 local pCoG = pSource:match("^(.*)/tests/[^/]+$") or ".";
-local pLuaEx = arg and arg[1] or pCoG.."/..";
+local pLuaEx = arg and arg[1] or pCoG.."/../LuaEx";
 local bGlobal = arg and arg[2] == "global";
 package.path = pCoG.."/?.lua;"..pCoG.."/?/init.lua;"..pLuaEx.."/?.lua;"..pLuaEx.."/?/init.lua;"..package.path;
 local nChecks = 0;
@@ -63,9 +63,9 @@ local bLoaded, vCoG = pcall(require("cog.load"), bGlobal and 1 or 0, "ScalerRegr
 loadfile = fLoadFile;
 assert(bLoaded, vCoG);
 
-local oDefault = scaler(100, 100, 200, 100, false);
+local oDefault = CoG.Scaler(100, 100, 200, 100, false);
 check(oDefault.isDebounceEnabled() == (bGlobal == true), "Instances inherit resolved config defaults.");
-local oDisabled = scaler(100, 100, 200, 100, false, {Debounce = false});
+local oDisabled = CoG.Scaler(100, 100, 200, 100, false, {Debounce = false});
 check(not oDisabled.isDebounceEnabled(), "False disables even configured global defaults.");
 
 local tEvents = {};
@@ -85,8 +85,8 @@ check(tAdjusted.x == 55 and table.concat(tEvents, ",") == "start,end", "Disabled
 
 local tClock = scheduler();
 local tOptions = {DelayMS = 100, Schedule = tClock.Schedule, Cancel = tClock.Cancel};
-local oFirst = scaler(100, 100, 200, 100, false, {Debounce = tOptions});
-local oSecond = scaler(100, 100, 200, 100, false, {Debounce = tOptions});
+local oFirst = CoG.Scaler(100, 100, 200, 100, false, {Debounce = tOptions});
+local oSecond = CoG.Scaler(100, 100, 200, 100, false, {Debounce = tOptions});
 local nStarts, nEnds, tLast = 0, 0, nil;
 oFirst.setOnMoveStart(function() nStarts = nStarts + 1; end);
 oFirst.setOnMoveEnd(function(_, tEvent) nEnds = nEnds + 1; tLast = tEvent; end);
@@ -128,7 +128,7 @@ check(oFirst.getDebounce().DelayMS == 100, "Settings are copied on input and out
 for _, tBad in ipairs({{DelayMS = -1}, {DelayMS = 0/0}, {DelayMS = math.huge}, {Schedule = false}, {Unknown = 1}}) do
     check(not pcall(oFirst.setDebounce, tBad) and oFirst.getDebounce().DelayMS == 100, "Invalid settings leave current configuration intact.");
 end
-check(not pcall(scaler, 100, 100, 100, 100, false, {Debounce = {Schedule = function() end, Cancel = null}}), "An incomplete adapter is rejected.");
+check(not pcall(CoG.Scaler, 100, 100, 100, 100, false, {Debounce = {Schedule = function() end, Cancel = null}}), "An incomplete adapter is rejected.");
 
 oFirst.adjustPos(2, 2);
 local tPending = tClock.Jobs[#tClock.Jobs];
@@ -150,11 +150,11 @@ oDisabled.adjustPos(1, 1);
 check(nCalls == 2, "A failing callback does not leave notification state locked.");
 
 local nNoAdapterEnds = 0;
-local oNoAdapter = scaler(100, 100, 100, 100, false, {Debounce = {DelayMS = 100, Schedule = null, Cancel = null}});
+local oNoAdapter = CoG.Scaler(100, 100, 100, 100, false, {Debounce = {DelayMS = 100, Schedule = null, Cancel = null}});
 oNoAdapter.setOnResizeEnd(function() nNoAdapterEnds = nNoAdapterEnds + 1; end);
 oNoAdapter.adjustSize(1, 1);
 check(nNoAdapterEnds == 1 and not oNoAdapter.isDebounceEnabled(), "Positive delay without an adapter remains synchronous.");
-local oBroken = scaler(100, 100, 100, 100, false, {Debounce = {DelayMS = 1,
+local oBroken = CoG.Scaler(100, 100, 100, 100, false, {Debounce = {DelayMS = 1,
     Schedule = function() error("scheduler failed"); end, Cancel = function() end}});
 oBroken.setOnMoveEnd(function() end);
 check(not pcall(oBroken.adjustPos, 1, 1), "Scheduler failures are reported.");
@@ -168,7 +168,7 @@ check(not pcall(oBroken.adjustPos, 1, 1), "A missing timer handle is rejected.")
 
 local tFailureClock = scheduler();
 local nCancelAttempts, nUnexpectedEnds = 0, 0;
-local oCancelFailure = scaler(100, 100, 100, 100, false, {Debounce = {
+local oCancelFailure = CoG.Scaler(100, 100, 100, 100, false, {Debounce = {
     DelayMS = 1, Schedule = tFailureClock.Schedule,
     Cancel = function() nCancelAttempts = nCancelAttempts + 1; error("cancel failed"); end,
 }});

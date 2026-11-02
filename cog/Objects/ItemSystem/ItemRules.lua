@@ -196,7 +196,7 @@ end
     @desc Require a CoGItem or subclass instance before calling item-specific methods.
 !]]
 function M.item(oItem)
-    assert(class.isinstance(oItem) and class.ischildorself(class.getname(oItem), CoGItem), "Expected a CoGItem instance.");
+    assert(class.isinstance(oItem) and class.isa(oItem, CoG.CoGItem), "Expected a CoGItem instance.");
 end
 
 --[[!
@@ -206,8 +206,8 @@ end
 function M.state(oContainer)
 
     if (not tStates[oContainer] and class.isinstance(oContainer) and
-        (type.isItemSlot(oContainer) or type.isItemSystem(oContainer) or
-         type.isItemSlotSystem(oContainer) or type.isItemStashSystem(oContainer))) then
+        (class.isa(oContainer, CoG.ItemSlot) or class.isa(oContainer, CoG.ItemSystem) or
+         class.isa(oContainer, CoG.ItemSlotSystem) or class.isa(oContainer, CoG.ItemStashSystem))) then
         oContainer.restoreRuntime();
     end
 
@@ -257,7 +257,7 @@ function M.validateSnapshot(tState, sKind)
     assert(#tState.items <= tState.capacity, "Saved container exceeds capacity.");
 
     if (sKind == "slot") then
-        assert(type.isCoGRegistry(tState.registry), "Invalid saved slot registry.");
+        assert(class.isa(tState.registry, CoG.CoGRegistry), "Invalid saved slot registry.");
     end
 
     if (sKind == "slot" or sKind == "inventory") then
@@ -368,8 +368,8 @@ function M.validateRestored(oContainer)
 
     for _, oChild in ipairs(tState.children) do
         assert(not tSeen[oChild] and rawequal(M.state(oChild).parent, oContainer), "Inconsistent saved container parent.");
-        assert((tState.kind == "stash" and type.isItemSystem(oChild)) or
-               (tState.kind == "slots" and type.isItemSlot(oChild)), "Invalid saved child container type.");
+        assert((tState.kind == "stash" and class.isa(oChild, CoG.ItemSystem)) or
+               (tState.kind == "slots" and class.isa(oChild, CoG.ItemSlot)), "Invalid saved child container type.");
         tSeen[oChild] = true;
     end
 
@@ -447,7 +447,7 @@ function M.validateAttachment(oItem)
     local tSeen = {[oItem] = true};
 
     while (oHost ~= null) do
-        assert(type.isCoG(oHost) and not tSeen[oHost], "Invalid saved attachment host or cycle.");
+        assert(class.isa(oHost, CoG.CoGBase) and not tSeen[oHost], "Invalid saved attachment host or cycle.");
         tSeen[oHost] = true;
         oHost = tAttachments[oHost] and tAttachments[oHost].host or null;
     end
@@ -1103,48 +1103,12 @@ end
 
 --[[!
     @fqxn CoG.ItemSystem.ItemRules.registerPersistence
-    @desc Uses the general serializer factory extension to reconnect inventory
-    indexes after the existing generated class deserializer restores fields.
+    @desc Checks native class identity. Declaring-class snapshot hooks reconnect
+    runtime indexes without registering a second persistence protocol.
 !]]
-local tPersistenceClasses = setmetatable({}, {__mode = "k"});
 function M.registerPersistence(cObject, bItem)
-
-    if (tPersistenceClasses[cObject]) then
-        return;
-    end
-
-    local sName = class.getname(cObject);
-
-    -- Let generated deserialization restore fields, then reconnect inventory-only runtime indexes.
-    local function fRestore(tState, tToken)
-        local oObject = cObject.deserialize(tState);
-        local nID = bItem and tState.CoGItem.pri.persistenceID or tState[sName].pri.state.persistenceID;
-
-        -- Publish the loaded identity before resolving links that can point back to this object.
-        Persistence.reconnect(nID, oObject, tToken);
-        local bOK, sReason = pcall(function()
-            if (bItem) then
-                oObject.restoreItemRuntime();
-                oObject.getAffixSystem(); -- Reconnect ownership before the saved graph is returned.
-                M.validateAttachment(oObject);
-                M.validateAttachments(oObject);
-            else
-                oObject.restoreRuntime(tToken);
-                M.validateRestored(oObject);
-            end
-        end);
-
-        if (not bOK) then
-            M.discard(oObject);
-            error(sReason);
-        end
-
-        return oObject;
-    end
-
-    -- Use the existing generic factory extension; register the adapter only once per class.
-    require("LuaEx.lib.serializer").registerFactory(cObject, {name = sName, types = {sName}, restore = fRestore});
-    tPersistenceClasses[cObject] = true;
+    assert(class.is(cObject), "Expected a native inventory class.");
+    -- Native declaring-class snapshot hooks reconnect runtime state directly.
 end
 
 return M;

@@ -24,17 +24,49 @@ local initLuaEx = require("LuaEx.load");
 initLuaEx();
 
 local initCoG = require("cog.load");
-local CoG = initCoG();
+local CoGBase = initCoG();
 ```
 
 This loads CoG with its bundled configuration and makes its classes and utilities
-available. The returned `CoG` is the framework's class object. Its configuration
-is available as `CoG.config`.
+available. The returned `CoGBase` is the common base class. Its configuration
+is available as `CoGBase.config`.
+
+Classes live directly in the `CoG` namespace, for example `CoG.CoGBase`.
+`CoG` is the namespace; `CoGBase` is the common base class.
 
 Requiring a loader returns its initializer without running it. CoG checks that
 `LUAEX_INIT == true` and requires LuaEx class-load level 3 or higher; LuaEx's
 default initialization includes those dependencies. Successful subsequent calls
 return the same initialized class.
+
+`CoG.BaseMod` and `CoG.Factorium` are native classes discovered by LuaEx,
+without short aliases. Factorium retains blueprint merging, ancestry validation,
+mod ordering and override history. Participating classes now supply their own
+contract to `CoG.Factorium.registerClass(cClass, tContract)`; see the
+[mod-system guide](cog/ModSystem/README.md) before updating existing callers.
+
+`CoG.SlotPattern` supplies relative occupied-cell layouts, with copied inputs,
+coordinate validation, snapshot iterators and native cloning/persistence.
+It is discovered without a loader alias; container placement rules remain separate.
+
+The inventory classes are also native: `CoG.CoGItem`, `CoG.ItemSlot`,
+`CoG.ItemSlotSystem`, `CoG.ItemSystem` and `CoG.ItemStashSystem`.
+CoGItem is a protected base for concrete items; containers coordinate permissions,
+transactions, attachments and grid footprints. Use fully qualified class names.
+Native saves retain shared registry references and callbacks; external owner
+fields are omitted and reconnected through `setOwner` after loading.
+
+`CoG.BaseCard` is a native, generic card foundation extending CoGObject.
+It keeps presentation flags separate from game rules. Plain-card cloning copies
+metadata and tags into fresh components; subclasses supply their own clone policy.
+
+`CoG.BaseDeck` is a native ordered card collection. Drawing returns actual card
+instances; list snapshots retain those identities, while cloning copies each card.
+Failed draw-many and shuffle operations preserve deck contents and order.
+
+`CoG.CoGCreature` composes independent XP, HP, inventory, equipment, status and
+targeting components. Callers supply XP/HP settings and a scope from the selected
+`CoG.EFFECT` enum; concrete games define creature behavior and copying policy.
 
 ## Gameplay examples
 
@@ -159,8 +191,22 @@ local nextEncounter = encounters.pop();
 
 ### Keep content separate from live objects
 
-`BaseMod` holds mod metadata and definitions. `Factorium` imports blueprints,
-merges class defaults, runs validators and resolves dependency, conflict and
+[`CoG.BaseMod`](cog/ModSystem/BaseMod.lxc) holds mod metadata and definitions.
+LuaEx discovers this native class; subclass it and call its protected constructor
+with the metadata table. No loader entry, short global alias or require alias is
+needed. Its permanent default-content UUID, version limits, final getters and
+protected scalar access are retained. Read-only metadata locks on its first
+non-null assignment; invalid metadata logs a warning and leaves defaults intact.
+
+Author and relationship lists are copied; raw blueprints remain available for
+later per-entry validation. `setLog` accepts a callback or logger object, and
+`getWarnings` returns copied diagnostics. Default file logging lazily uses
+`LuaEx.Classes.BaseLog` when utility classes are available. Logging failures are
+contained. Native `clone`, `serialize` and `deserialize` preserve class identity,
+independent instance data and read-only metadata.
+
+`Factorium` remains a separate legacy migration. Its importer is designed to
+import blueprints, merge class defaults, run validators and resolve dependency, conflict and
 override rules. You can enable, replace or remove mods, finalize eligibility,
 then query the definitions available to your game.
 
@@ -206,20 +252,17 @@ A project config returns its overrides:
 return {
     app = {name = "My game", path = {save = "saves/"}},
     Pool = {reservationMax = 0.9},
-    StatusTracker = {
-        CREATURE = {"HASTENED", "GUARDED"},
-    },
-    MyGame = CoG.purge({difficulty = "normal"}),
+    MyGame = CoGBase.purge({difficulty = "normal"}),
 };
 ```
 
-Ordinary tables merge recursively into existing default keys. `CoG.purge(table)`
-replaces a branch in full, allowing new keys or shorter lists. `StatusTracker`
-replaces its section in full so each game defines its own effect categories.
-With the configuration above, a timed status looks like this:
+Ordinary tables merge recursively into existing default keys. `CoGBase.purge(table)`
+replaces a branch in full, allowing new keys or shorter lists. Status effects are
+declarations, not configuration. The default `CoG.EFFECT` contains 64 active
+effects. A timed status uses the native class directly:
 
 ```lua
-local effects = StatusTracker(StatusTracker.CREATURE);
+local effects = CoG.StatusTracker(CoG.EFFECT);
 
 effects.activate("HASTENED", 2, true);
 effects.cycle();
@@ -229,9 +272,21 @@ effects.cycle();
 print(effects.isActive("HASTENED"));    -- false
 ```
 
-The completed configuration is locked before the CoG class is declared.
-`CoG.config` exposes that read-only table; `require("cog.config")` returns the
-same reference. `TIER` lives under `CoG.config.TIER`. The
+Applications may replace `CoG.EFFECT` with an unmarked enum of the same fully
+qualified name in the complete loading batch. Embedded categories are supported:
+pass a collection such as `CoG.EFFECT.CREATURE` to track its terminal descendants.
+Effects may be passed as canonical members, scope-relative paths or fully qualified
+paths. Enum declaration order determines snapshot iteration order.
+
+LuaEx discovers `CoG.StatusTracker` before CoG configuration runs. No loader entry,
+short global alias or require alias is needed. Use native `clone`, `serialize` and
+`deserialize` for independent state and canonical enum identities. The old factory
+and its plain-state snapshot format are archived; they are not compatibility APIs.
+Configuration-based StatusTracker declarations are rejected.
+
+The completed configuration is locked before `cog.load` returns.
+`CoGBase.config` exposes that read-only table; `require("cog.config")` returns the
+same reference. `TIER` lives under `CoGBase.config.TIER`. The
 [config assembler](cog/config.lua), [bundled settings](cog/config/) and
 [loader](cog/load.lua) document the remaining options.
 
@@ -332,7 +387,7 @@ Individual modules contain their
 API documentation alongside the implementation:
 
 - **Characters and resources:** [Pool](cog/Pool.lua),
-  [XPSystem](cog/XPSystem.lua), [StatusTracker](cog/StatusTracker.lua).
+  [XPSystem](cog/XPSystem.lua), [StatusTracker](cog/StatusTracker.lxc).
 - **Items and loot:** [item modules](cog/Objects/ItemSystem/),
   [Rarity](cog/Rarity.lua), [AffixSystem](cog/AffixSystem.lua),
   [CoGRegistry](cog/CoGRegistry.lua), [item interfaces](cog/Interfaces/).
@@ -347,3 +402,29 @@ API documentation alongside the implementation:
 
 CoG is released into the public domain under the [Unlicense](LICENSE), for
 commercial and non-commercial projects.
+
+## Current enum declarations
+
+LuaEx discovers CoG enum sources before initializing CoG classes. Shared tiers
+are declared in cog/enums/TIER.lxe as CoG.TIER. CoGBase.config.TIER references
+that same collection.
+
+`cog/enums/EFFECT.lxe` declares `CoG.EFFECT` with `---@default`. Its 64 original
+status names and their order are preserved. One application declaration with the
+same FQN replaces the whole enum before `CoG.StatusTracker` initializes; members
+are not merged and published definitions cannot be replaced later.
+
+Pool.ASPECT/MODIFIER/EVENT, AffixSystem.TYPE, Rarity.LEVEL and
+CoGVehicle.COMPONENT are embedded in their owning .lxc classes using within.
+Rarity levels are I through VI. Rarity.getName(level) returns the configured
+Rarity.NAME display label; colors, chances and affix limits remain configurable.
+For example, Rarity.LEVEL.III is the identity and its default display name is RARE.
+
+Enum metadata is Value, Ordinal, Name and Parent. Use lxe.isMember(value, enum)
+for exact membership. Configuration cannot add or rename enum members; edit
+the declaration source before initialization. New declarations cannot be attached
+to a class after it has initialized.
+
+Other unfinished systems remain separate work. StatusTracker is a native class
+available through its namespace, without changing the CoG loader. See HANDOFF.md
+for migration status and verification limits.

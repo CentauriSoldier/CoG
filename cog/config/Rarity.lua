@@ -105,7 +105,7 @@ return {
         </tbody>
     </table>
     !]]
-    LEVEL               = {"COMMON",    "UNCOMMON",     "RARE",         "EPIC",     "LEGENDARY",    "SINGULAR"},
+    NAME                = {"COMMON",    "UNCOMMON",     "RARE",         "EPIC",     "LEGENDARY",    "SINGULAR"},
     COLOR               = {"#BBBBBB",   "#0000B3",      "#AFC657",      "#00C202",  "#BA0000",      "#CF7136"},
     -- Cumulative integer thresholds must start at 100 and never increase.
     -- Equal thresholds allow a level with zero random occurrence probability.
@@ -119,3 +119,4 @@ return {
     MAX_SUFFIXES        = {1,           2,              2,              3,          3,              3},
 };
 end;
+

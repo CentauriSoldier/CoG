@@ -1,3 +1,4 @@
 return {
-    COMPONENT = {"BODY"},
+    -- Component identities are declared in CoGVehicle.lxc.
 };
+

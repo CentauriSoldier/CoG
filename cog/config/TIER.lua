@@ -1,12 +1,8 @@
 --[[!
 @fqxn CoG.Config.TIER
-@pulsarlua enum CoG.config.TIER
-@desc Default tier enum: twenty Roman-numeral members with numeric ordinal values.
-      This private enum is stored in CoG configuration rather than the global
-      environment. A project's config table may replace TIER with its own enum.
-      Access members through CoG.config.TIER.I; id is their one-based ordinal.
-      Member payloads may be numbers, tables or nested enums. Framework tier
-      ordering uses member ids and does not depend on numeric payloads.
+@desc Supplies the shared LXE tier declaration to ordinary configuration modules.
+    LuaEx must discover cog/enums/TIER.lxe before CoG configuration is assembled.
+@ret enum Canonical CoG.TIER collection.
 !]]
-return enum("TIER", {"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X",
-    "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX"}, nil, true);
+assert(CoG and lxe.isEnum(CoG.TIER), "LuaEx must load CoG.TIER before CoG configuration.");
+return CoG.TIER;

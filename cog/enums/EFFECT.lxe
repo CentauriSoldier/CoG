@@ -1,0 +1,74 @@
+--[[!
+@fqxn CoG.EFFECT
+@desc Default status effect identities. Applications may replace this declaration
+    with one unmarked CoG.EFFECT enum in the same loading batch.
+!]]
+namespace CoG {
+    ---@default
+    public enum EFFECT {
+        ARMOURED;
+        BERSERK;
+        BLESSED;
+        BLIND;
+        BURNED;
+        CHARMED;
+        CHILLED;
+        CONFUSED;
+        CURSED;
+        DEBILITATED;
+        DEAFENED;
+        DISARMED;
+        DISORIENTED;
+        DISEASED;
+        DOMINATED;
+        EMPOWERED;
+        ENFEEBLED;
+        ENAMORED;
+        ENERGIZED;
+        ENRAGED;
+        ENTANGLED;
+        ENTHRALLED;
+        EXHAUSTED;
+        FRIGHTENED;
+        FROZEN;
+        GUARDED;
+        GUARDING;
+        HASTENED;
+        IMMOBILIZED;
+        INCAPACITATED;
+        INTIMIDATED;
+        INVIGORATED;
+        INVISIBLE;
+        MEDITATING;
+        MARKED;
+        NERVOUS;
+        PANICKED;
+        PACIFIED;
+        PARALYZED;
+        PETRIFIED;
+        PHASED;
+        POISONED;
+        REFLECTED;
+        REGENERATING;
+        REJUVENATED;
+        ROOTED;
+        RUSHED;
+        SAPPED;
+        SCORCHED;
+        SHATTERED;
+        SHIELDED;
+        SHIELDING;
+        SHOCKED;
+        SILENCED;
+        STUNNED;
+        SLEEP;
+        SLOWED;
+        SURPRISED;
+        TERRIFIED;
+        TRANQUILIZED;
+        UNCONSCIOUS;
+        VEXED;
+        VULNERABLE;
+        WEAKENED;
+    }
+}
