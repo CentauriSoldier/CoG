@@ -168,7 +168,7 @@ namespace CoG {
 
         --[[!
         @fqxn CoG.AStar.Helpers.findPath
-        @desc Searches outgoing neighbors and ports using nondominated per-rover cost vectors and the original tie rule. A stable heap orders equal scores by insertion; per-search read caches are discarded around live passage predicates. Validated weak-key node caches reuse immutable geometry and numeric terrain/profile work across replans. Callback-free graphs use conservative reverse cost bounds without changing queue order or equal-cost ties; callback-driven searches retain their live traversal order. Equivalent cost responses share dense numeric dimensions; differing budgets still constrain the affordable prefix. Passage predicates refine dimensions when responses diverge, preserving historical costs and individual rover identities.
+        @desc Searches outgoing neighbors and ports using nondominated per-rover cost vectors and the original tie rule. A stable heap orders equal scores by insertion; per-search read caches are discarded around live passage predicates. Validated weak-key node caches reuse immutable geometry and numeric terrain/profile work across replans. Callback-free graphs include declarative port type restrictions and use conservative reverse cost bounds without changing queue order or equal-cost ties; callback-driven searches retain their live traversal order. Equivalent cost responses share dense numeric dimensions; differing budgets still constrain the affordable prefix. Passage predicates refine dimensions when responses diverge, preserving historical costs and individual rover identities.
         !]]
         private static findPath(oStart, oEnd, tRovers) {
             local oSystem        = AStar.pathNodeSystem(oStart);
@@ -483,7 +483,8 @@ namespace CoG {
                     for _, oNeighbor in ipairs(fNeighbors(oNode)) do
                         local tNeighbor = fSnapshot(oNeighbor);
                         if (tNeighbor == nil) then return nil; end
-                        if (tNeighbor.system == oSystem) then
+                        if (tNeighbor.system == oSystem and
+                            (tSnapshot.physicalSet[oNeighbor] or oNode.canUsePort(oNeighbor, tRovers))) then
                             local bPassable = tPassable[oNeighbor];
                             if (bPassable == nil) then
                                 bPassable = fPassable(oNeighbor);
@@ -1795,6 +1796,7 @@ namespace CoG {
                 --nodes that are logically but not physically adjacent (indexed by object)
                 portsDecoy = {},
                 portPassageRules = {},
+                portRequiredTypes = {},
                 rovers = {},
                 --indexed by object, values are boolean
                 roversDecoy = {},
@@ -2351,9 +2353,66 @@ namespace CoG {
             }
 
             --[[!
+            @fqxn CoG.AStar.AStarNode.getPortRequiredType
+            @pulsarlua function AStarNode.getPortRequiredType
+            @desc Gets the uppercase rover type required by this outgoing port, or nil when no type restriction is set. A separate passage predicate may also apply.
+            @param AStarNode oNode The destination.
+            @ret string|nil sType The required rover type.
+            !]]
+            public getPortRequiredType(oNode) {
+                type.assert.custom(oNode, "AStarNode");
+                return this._tData.portRequiredTypes[oNode];
+            }
+
+            --[[!
+            @fqxn CoG.AStar.AStarNode.setPortRequiredType
+            @pulsarlua function AStarNode.setPortRequiredType
+            @desc Requires every rover using an existing outgoing port to have this type. Names are case-insensitive; nil clears only the type restriction. Does not replace a passage predicate or restrict physical adjacency. Planning can include this declarative restriction in exact goal bounds; movement rechecks current rover types. Two-way updates require both connections to exist.
+            @param AStarNode oNode The destination.
+            @param string|nil sType The required rover type; nil clears it.
+            @param boolean|nil bTwoWay True updates both directions; defaults to false.
+            @ret AStarNode oSource This node.
+            @ex
+            local oSystem = AStar();
+            local oMap = oSystem.newMap("world", ASTAR_MAP_TYPE_SQUARE, {AStar.LayerConfig("ground")}, 3, 1);
+            local oEntrance = oMap.getNode("ground", 1, 1);
+            local oExit = oMap.getNode("ground", 3, 1);
+            oEntrance.addPort(oExit);
+            oEntrance.setPortRequiredType(oExit, "goblin", true);
+            local oRover = oEntrance.createRover();
+            assert(not oEntrance.canUsePort(oExit, oRover));
+            oRover.addType("goblin");
+            assert(oEntrance.canUsePort(oExit, oRover));
+            !]]
+            public setPortRequiredType(oNode, sType, bTwoWay) {
+                type.assert.custom(oNode, "AStarNode");
+
+                if (sType ~= nil) then
+                    type.assert.string(sType, "%S+");
+                    sType = sType:upper();
+                end
+
+                if (bTwoWay ~= nil) then
+                    type.assert.custom(bTwoWay, "boolean");
+                end
+
+                local pri    = this._tData;
+                local tOther = oNode._tData;
+                assert(pri.ports[oNode] == true, "An outgoing port is required before setting its required type.");
+                assert(not bTwoWay or tOther.ports[this] == true, "A reverse port is required for a two-way type update.");
+                pri.portRequiredTypes[oNode] = sType;
+
+                if (bTwoWay) then
+                    tOther.portRequiredTypes[this] = sType;
+                end
+
+                return this;
+            }
+
+            --[[!
             @fqxn CoG.AStar.AStarNode.canUsePort
             @pulsarlua function AStarNode.canUsePort
-            @desc Checks outgoing port existence and passage permission for every supplied rover, independently of node passability, occupancy, movement points and the rovers' current positions. A missing port returns false; a port without a rule allows passage.
+            @desc Checks outgoing port existence and passage permission for every supplied rover, independently of node passability, occupancy, movement points and the rovers' current positions. A missing port returns false; a port without restrictions allows passage. A required rover type and a passage predicate, when both set, must both allow the group.
             @param AStarNode oNode The destination.
             @param AStarRover|table ... One or more rovers, individually or in an ordered table.
             @ret boolean bAllowed Whether every rover may use this port.
@@ -2371,7 +2430,17 @@ namespace CoG {
                 local pri     = this._tData;
                 local bRet    = pri.ports[oNode] == true;
                 local fRule   = pri.portPassageRules[oNode];
+                local sType   = pri.portRequiredTypes[oNode];
                 assert(#tRovers > 0, "Port passage requires at least one rover.");
+
+                if (bRet and sType ~= nil) then
+                    for _, oRover in ipairs(tRovers) do
+                        if (not oRover.isType(sType)) then
+                            bRet = false;
+                            break;
+                        end
+                    end
+                end
 
                 if (bRet and fRule ~= nil) then
                     for _, oRover in ipairs(tRovers) do
@@ -2585,10 +2654,12 @@ namespace CoG {
 
                 this._tData.ports[oNode] = nil;
                 this._tData.portPassageRules[oNode] = nil;
+                this._tData.portRequiredTypes[oNode] = nil;
 
                 if (bTwoWay ~= false) then
                     oNode._tData.ports[this] = nil;
                     oNode._tData.portPassageRules[this] = nil;
+                    oNode._tData.portRequiredTypes[this] = nil;
                 end
 
                 return this;

@@ -26,7 +26,7 @@ function Model.new()
   -- Entrances are paired in reading order; an odd final entrance is unlinked.
   for i=1,#caves-1,2 do
    local a,b=caves[i],caves[i+1];a.addPort(b)
-   a.setPortPassageRule(b,function(rover)return rover.isType("goblin") end,true)
+   a.setPortRequiredType(b,"goblin",true)
    demo.links[#demo.links+1]={a,b}
   end
  end
