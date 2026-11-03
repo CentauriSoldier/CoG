@@ -168,12 +168,12 @@ local function init(...)
         BuildVersionID = cCoGBase.BuildVersionID;
 
         -- Foundational classes and utilities.
-        -- scaler       = fGetClass("scaler.lxc", "Scaler", "scaler");
+        -- scaler       = fGetClass("Scaler.lxc", "Scaler", "scaler");
         -- Shuffler     = fGetClass("Shuffler.lxc", "Shuffler");
         Rarity          = fGetClass("Rarity.lxc", "Rarity");
         -- Validate selected rarity settings now, before exposing initialized CoG.
-        assert(lxe.isEnum(Rarity.LEVEL), "Rarity must provide its declared LEVEL enum.");
-        Rarity.getName(Rarity.LEVEL.I); -- Validate selected settings without constructing enum identities.
+        assert(lxe.isEnum(CoG.LEVEL), "CoG must provide its shared LEVEL enum.");
+        Rarity.getName(Rarity.MinLevel); -- Validate selected settings without constructing enum identities.
         RNG             = fGetClass("RNG.lxc", "RNG");
         -- BaseMod      = fGetClass("ModSystem/BaseMod.lxc", "BaseMod");
         -- Factorium    = fGetClass("ModSystem/Factorium.lxc", "Factorium");

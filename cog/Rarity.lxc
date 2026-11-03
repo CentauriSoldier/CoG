@@ -1,20 +1,56 @@
 --[[!
 @fqxn CoG.Rarity
 @pulsarlua class Rarity
-@desc Static rarity levels, colors, cumulative chance thresholds and affix limits.
+@desc Static rarity queries over parallel configuration lists indexed by CoG.LEVEL ordinals.
     LuaEx discovers the declaration without reading application configuration.
     cog.load validates and captures that configuration after CoG initializes.
-    Validated lists are private snapshots; callers receive immutable enum members
+    MinLevel and MaxLevel describe the configured range. Lists are private snapshots; callers receive immutable enum members
     and scalar settings. The private constructor prevents instances.
 !]]
 namespace CoG {
-    final class Rarity {
+    final class Rarity requires(CoG.LEVEL, CoG.TIER) {
         --[[!
-        @fqxn CoG.Rarity.LEVEL
-        @desc Generic rarity identities. Configuration supplies display names,
-            colors, chances and affix limits for these six ordinal rows.
+        @fqxn CoG.Rarity.MinLevel
+        @desc First configured rarity, represented by the first CoG.LEVEL member.
+            Configuration is resolved lazily after cog.load; the property is read-only.
+        @ret CoG.LEVEL eLevel Lowest configured level.
         !]]
-        public enum LEVEL within CoG.Rarity { I; II; III; IV; V; VI; }
+        public static MinLevel {
+            get {
+                return Rarity.getData().eLevel[1];
+            }
+        }
+
+        --[[!
+        @fqxn CoG.Rarity.MaxLevel
+        @desc Last configured rarity. The NAME table's entry count selects the
+            corresponding CoG.LEVEL ordinal; this property does not change the enum.
+        @ret CoG.LEVEL eLevel Highest configured level.
+        !]]
+        public static MaxLevel {
+            get {
+                local tData = Rarity.getData();
+                return tData.eLevel[tData.nLevels];
+            }
+        }
+
+        --[[!
+        @fqxn CoG.Rarity.Helpers.getOrdinal
+        @desc Requires a canonical CoG.LEVEL member whose ordinal selects an existing
+            config row. Payload values are intentionally ignored. All queries share
+            this bounds check before indexing the unchanged parallel config lists.
+        @param CoG.LEVEL eLevel Requested level.
+        @ret number nOrdinal One-based configured row index.
+        !]]
+        private static getOrdinal(eLevel) {
+            assert(lxe.isMember(eLevel, CoG.LEVEL), "Expected a CoG.LEVEL member.");
+            local nOrdinal = eLevel.Ordinal;
+            local tData = Rarity.getData();
+            assert(nOrdinal >= 1 and nOrdinal <= tData.nLevels,
+                "Rarity level ordinal is outside the configured range.");
+
+            return nOrdinal;
+        }
         private static _tData       = {};
         private static _bConfigured = false;
 
@@ -62,8 +98,8 @@ namespace CoG {
         !]]
         private static validateConfig(tRarity) {
             type.assert.table(tRarity, nil, nil, nil, nil, "\nRarity config must be a table.");
-            local nLevels = Rarity.validateList(tRarity.NAME, "NAME", #Rarity.LEVEL);
-            assert(nLevels > 0, "Rarity config LEVEL must contain at least one level.");
+            local nLevels = Rarity.validateList(tRarity.NAME, "NAME");
+            assert(nLevels > 0, "Rarity config NAME must contain at least one level.");
 
             local tFields = {"COLOR", "CHANCE", "MIN_AFFIX_TIER", "MAX_AFFIX_TIER",
                              "MIN_PREFIXES", "MAX_PREFIXES", "MIN_SUFFIXES", "MAX_SUFFIXES"};
@@ -148,8 +184,9 @@ namespace CoG {
                     tData[sField] = Rarity.snapshotList(tRarity[sField]);
                 end
 
-                tData.nLevels = #Rarity.LEVEL;
-                tData.eLevel = Rarity.LEVEL;
+                tData.nLevels = #tData.NAME;
+                tData.eLevel = CoG.LEVEL;
+                assert(tData.nLevels <= #CoG.LEVEL, "Rarity rows exceed the available CoG.LEVEL members.");
 
                 Rarity._tData       = tData;
                 Rarity._bConfigured = true;
@@ -161,123 +198,123 @@ namespace CoG {
         --[[!
         @fqxn CoG.Rarity.getName
         @desc Returns the configured display name without changing enum identity.
-        @param enumitem eLevel A member of Rarity.LEVEL.
+        @param enumitem eLevel A member of CoG.LEVEL.
         @ret string Display name for this rarity.
         !]]
         public static getName(eLevel) {
-            assert(lxe.isMember(eLevel, Rarity.LEVEL), "Expected a Rarity.LEVEL member.");
-            return Rarity.getData().NAME[eLevel.Ordinal];
+            local nOrdinal = Rarity.getOrdinal(eLevel);
+            return Rarity.getData().NAME[nOrdinal];
         }
         --[[!
         @fqxn CoG.Rarity.Methods.getColor
         @pulsarlua function Rarity.getColor
         @desc Returns the configured #RRGGBB color.
-        @param Rarity.LEVEL eLevel Rarity member whose ordinal selects the settings row.
+        @param CoG.LEVEL eLevel Rarity member whose ordinal selects the settings row.
         @ret string vValue Configured value.
         !]]
         public static getColor(eLevel) {
             local tData = Rarity.getData();
-            assert(lxe.isMember(eLevel, Rarity.LEVEL), "Expected a Rarity.LEVEL member.");
+            local nOrdinal = Rarity.getOrdinal(eLevel);
 
-            return tData.COLOR[eLevel.Ordinal];
+            return tData.COLOR[nOrdinal];
         }
 
         --[[!
         @fqxn CoG.Rarity.Methods.getChance
         @pulsarlua function Rarity.getChance
         @desc Returns the cumulative percentage threshold, not the individual occurrence probability.
-        @param Rarity.LEVEL eLevel Rarity member whose ordinal selects the settings row.
+        @param CoG.LEVEL eLevel Rarity member whose ordinal selects the settings row.
         @ret number vValue Configured value.
         !]]
         public static getChance(eLevel) {
             local tData = Rarity.getData();
-            assert(lxe.isMember(eLevel, Rarity.LEVEL), "Expected a Rarity.LEVEL member.");
+            local nOrdinal = Rarity.getOrdinal(eLevel);
 
-            return tData.CHANCE[eLevel.Ordinal];
+            return tData.CHANCE[nOrdinal];
         }
 
         --[[!
         @fqxn CoG.Rarity.Methods.getMinAffixTier
         @pulsarlua function Rarity.getMinAffixTier
         @desc Returns the minimum permitted affix tier.
-        @param Rarity.LEVEL eLevel Rarity member whose ordinal selects the settings row.
+        @param CoG.LEVEL eLevel Rarity member whose ordinal selects the settings row.
         @ret TIER vValue Configured value.
         !]]
         public static getMinAffixTier(eLevel) {
             local tData = Rarity.getData();
-            assert(lxe.isMember(eLevel, Rarity.LEVEL), "Expected a Rarity.LEVEL member.");
+            local nOrdinal = Rarity.getOrdinal(eLevel);
 
-            return tData.MIN_AFFIX_TIER[eLevel.Ordinal];
+            return tData.MIN_AFFIX_TIER[nOrdinal];
         }
 
         --[[!
         @fqxn CoG.Rarity.Methods.getMaxAffixTier
         @pulsarlua function Rarity.getMaxAffixTier
         @desc Returns the maximum permitted affix tier.
-        @param Rarity.LEVEL eLevel Rarity member whose ordinal selects the settings row.
+        @param CoG.LEVEL eLevel Rarity member whose ordinal selects the settings row.
         @ret TIER vValue Configured value.
         !]]
         public static getMaxAffixTier(eLevel) {
             local tData = Rarity.getData();
-            assert(lxe.isMember(eLevel, Rarity.LEVEL), "Expected a Rarity.LEVEL member.");
+            local nOrdinal = Rarity.getOrdinal(eLevel);
 
-            return tData.MAX_AFFIX_TIER[eLevel.Ordinal];
+            return tData.MAX_AFFIX_TIER[nOrdinal];
         }
 
         --[[!
         @fqxn CoG.Rarity.Methods.getMinPrefixCount
         @pulsarlua function Rarity.getMinPrefixCount
         @desc Returns the minimum prefix count when affixes are present.
-        @param Rarity.LEVEL eLevel Rarity member whose ordinal selects the settings row.
+        @param CoG.LEVEL eLevel Rarity member whose ordinal selects the settings row.
         @ret number vValue Configured value.
         !]]
         public static getMinPrefixCount(eLevel) {
             local tData = Rarity.getData();
-            assert(lxe.isMember(eLevel, Rarity.LEVEL), "Expected a Rarity.LEVEL member.");
+            local nOrdinal = Rarity.getOrdinal(eLevel);
 
-            return tData.MIN_PREFIXES[eLevel.Ordinal];
+            return tData.MIN_PREFIXES[nOrdinal];
         }
 
         --[[!
         @fqxn CoG.Rarity.Methods.getMaxPrefixCount
         @pulsarlua function Rarity.getMaxPrefixCount
         @desc Returns the maximum permitted prefix count.
-        @param Rarity.LEVEL eLevel Rarity member whose ordinal selects the settings row.
+        @param CoG.LEVEL eLevel Rarity member whose ordinal selects the settings row.
         @ret number vValue Configured value.
         !]]
         public static getMaxPrefixCount(eLevel) {
             local tData = Rarity.getData();
-            assert(lxe.isMember(eLevel, Rarity.LEVEL), "Expected a Rarity.LEVEL member.");
+            local nOrdinal = Rarity.getOrdinal(eLevel);
 
-            return tData.MAX_PREFIXES[eLevel.Ordinal];
+            return tData.MAX_PREFIXES[nOrdinal];
         }
 
         --[[!
         @fqxn CoG.Rarity.Methods.getMinSuffixCount
         @pulsarlua function Rarity.getMinSuffixCount
         @desc Returns the minimum suffix count when affixes are present.
-        @param Rarity.LEVEL eLevel Rarity member whose ordinal selects the settings row.
+        @param CoG.LEVEL eLevel Rarity member whose ordinal selects the settings row.
         @ret number vValue Configured value.
         !]]
         public static getMinSuffixCount(eLevel) {
             local tData = Rarity.getData();
-            assert(lxe.isMember(eLevel, Rarity.LEVEL), "Expected a Rarity.LEVEL member.");
+            local nOrdinal = Rarity.getOrdinal(eLevel);
 
-            return tData.MIN_SUFFIXES[eLevel.Ordinal];
+            return tData.MIN_SUFFIXES[nOrdinal];
         }
 
         --[[!
         @fqxn CoG.Rarity.Methods.getMaxSuffixCount
         @pulsarlua function Rarity.getMaxSuffixCount
         @desc Returns the maximum permitted suffix count.
-        @param Rarity.LEVEL eLevel Rarity member whose ordinal selects the settings row.
+        @param CoG.LEVEL eLevel Rarity member whose ordinal selects the settings row.
         @ret number vValue Configured value.
         !]]
         public static getMaxSuffixCount(eLevel) {
             local tData = Rarity.getData();
-            assert(lxe.isMember(eLevel, Rarity.LEVEL), "Expected a Rarity.LEVEL member.");
+            local nOrdinal = Rarity.getOrdinal(eLevel);
 
-            return tData.MAX_SUFFIXES[eLevel.Ordinal];
+            return tData.MAX_SUFFIXES[nOrdinal];
         }
 
         --[[!
@@ -288,7 +325,7 @@ namespace CoG {
             at least as large as the adjusted roll wins; the lowest level is the
             fallback. Negative adjustments favor rarer levels.
         @param number|nil nAdjustment Finite roll adjustment; defaults to zero.
-        @ret Rarity.LEVEL eLevel Selected member of this class's LEVEL collection.
+        @ret CoG.LEVEL eLevel Selected CoG.LEVEL member within the configured rarity range.
         !]]
         public static getRandom(nAdjustment) {
             local tData = Rarity.getData();

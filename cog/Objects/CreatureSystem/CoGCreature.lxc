@@ -9,7 +9,7 @@
 !]]
 namespace CoG {
     class CoGCreature : CoG.CoGObject requires(CoG.XPSystem, CoG.Pool, CoG.ItemSystem, CoG.ItemSlotSystem, CoG.StatusTracker) {
-        private static _Targetor = require("cog.Targetor");
+        private static TargetorFactory = require("cog.Targetor");
         protected XP = null;
         protected HP = null;
         protected Inventory = null;
@@ -107,7 +107,7 @@ namespace CoG {
         Inventory and equipment use their existing empty defaults and associate this creature as owner.
         @param string sName Nonblank name passed to CoGObject.
         @param string sDescription Nonblank description passed to CoGObject.
-        @param Rarity.LEVEL|nil eRarity Rarity passed to CoGObject.
+        @param CoG.LEVEL|nil eRarity Rarity passed to CoGObject.
         @param string|nil wEventrix Registered event environment name passed to CoGObject.
         @param table tOptions Required XP, HP and StatusScope configuration described above.
         @throws Missing/invalid options, a nonconfigured status scope, or an inherited/component constructor error.
@@ -120,7 +120,7 @@ namespace CoG {
             this.Inventory = CoG.ItemSystem(nil, nil, this);
             this.Equipment = CoG.ItemSlotSystem(nil, this);
             this.StatusTracker = CoG.StatusTracker(tOptions.StatusScope);
-            this.Targetor = CoGCreature._Targetor();
+            this.Targetor = CoGCreature.TargetorFactory();
         }
 
         --[[!

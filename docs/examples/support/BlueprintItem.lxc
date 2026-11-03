@@ -1,0 +1,25 @@
+--[[!
+@fqxn Examples.BlueprintItem
+@desc A concrete CoGBase participant. The host registers its blueprint contract explicitly.
+!]]
+namespace Examples {
+    class BlueprintItem : CoG.CoGBase {
+        private Name = "";
+        private Weight = 0;
+        --[[!
+        @fqxn Examples.BlueprintItem.BlueprintItem
+        @desc Stores already-validated blueprint values in a concrete CoGBase instance.
+        !]]
+        public BlueprintItem(sName, nWeight) { base(); this.Name=sName; this.Weight=nWeight; }
+        --[[!
+        @fqxn Examples.BlueprintItem.getName
+        @desc Returns the accepted blueprint name.
+        !]]
+        public getName() { return this.Name; }
+        --[[!
+        @fqxn Examples.BlueprintItem.getWeight
+        @desc Returns the accepted blueprint weight.
+        !]]
+        public getWeight() { return this.Weight; }
+    }
+}

@@ -134,7 +134,7 @@ namespace CoG {
             @param object|null|nil oOwner Optional class instance; nil means null.
             @param string|nil sName Nonblank name, defaulting to Vehicle.
             @param string|nil sDescription Nonblank description, defaulting to A vehicle.
-            @param Rarity.LEVEL|nil eRarity Rarity passed to CoGObject.
+            @param CoG.LEVEL|nil eRarity Rarity passed to CoGObject.
             @param string|nil sEventrixEnvironment Event environment name passed to CoGObject.
             @throws Invalid vehicle inputs or an inherited constructor error.
         !]]

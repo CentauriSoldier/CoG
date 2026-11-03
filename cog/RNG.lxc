@@ -9,7 +9,7 @@
 namespace CoG {
     class RNG {
         -- Keep the original random function reference, as the Lua module did.
-        private static const _random = math.random;
+        private static const random = math.random;
         private static const _nDefaultDieSides   = 6;
         private static const _n100               = 100;
         private static const _nDefaultCheckSides = 20;
@@ -50,13 +50,11 @@ namespace CoG {
         private static weightedSuccess(vWeight) {
             local nWeight = vWeight == nil and RNG._nDefaultWeight or vWeight;
             RNG.validateFinite(nWeight, "Weight");
-            assert(nWeight >= 0 and nWeight <= 1, "Weight must be between 0 and 1.");
+            assert(nWeight >= 0 and nWeight <= 1, "Weight must be between 0 and 1 (both inclusive).");
 
             -- Draws are in [0, 1). Strict comparison makes zero weight always fail,
             -- including when the draw itself is exactly zero.
-            local bSuccess = RNG._random() < nWeight;
-
-            return bSuccess;
+            return RNG.random() < nWeight;
         }
 
         --[[!
@@ -123,7 +121,7 @@ namespace CoG {
                 assert(select(nIndex, ...) ~= nil, "multiChoice items cannot be nil.");
             end
 
-            local nIndex = RNG._random(1, nItems);
+            local nIndex = RNG.random(1, nItems);
             local vRet = select(nIndex, ...);
 
             return vRet;
@@ -136,7 +134,7 @@ namespace CoG {
         !]]
         public static percent(bFloat) {
             assert(bFloat == nil or type(bFloat) == "boolean", "Float flag must be boolean.");
-            local nResult = RNG._random(1, RNG._n100);
+            local nResult = RNG.random(1, RNG._n100);
 
             if (bFloat) then
                 nResult = nResult / RNG._n100;
@@ -179,7 +177,7 @@ namespace CoG {
                 vRet = {};
 
                 for nPick = 1, nPicks do
-                    local nIndex = RNG._random(1, #tKeys);
+                    local nIndex = RNG.random(1, #tKeys);
                     vRet[nPick] = tInput[tKeys[nIndex]];
 
                     -- Remove only the copied key. Never mutate the caller's source list.
@@ -191,7 +189,7 @@ namespace CoG {
                 end
 
             elseif (#tKeys > 0) then
-                vRet = tInput[tKeys[RNG._random(1, #tKeys)]];
+                vRet = tInput[tKeys[RNG.random(1, #tKeys)]];
             end
 
             return vRet;
@@ -219,7 +217,7 @@ namespace CoG {
                 nTerm = nTerm * nWeight;
             end
 
-            local nDraw = RNG._random() * nSum;
+            local nDraw = RNG.random() * nSum;
             local nAcc = 0;
             local nResult = nMax;
             nTerm = 1;
@@ -248,7 +246,7 @@ namespace CoG {
             nSides = RNG.validateInteger(nSides, RNG._nDefaultCheckSides, 1, "Die sides");
             nCheck = RNG.validateInteger(nCheck, RNG._nDefaultCheckSides / 2, nil, "Check threshold");
 
-            local nRoll = RNG._random(1, nSides);
+            local nRoll = RNG.random(1, nSides);
             local bSuccess = nRoll >= nCheck;
 
             return bSuccess, nRoll, nRoll - nCheck;
@@ -275,7 +273,7 @@ namespace CoG {
                 local nTotal = 0;
 
                 for nDie = 1, nDice do
-                    local nRoll = RNG._random(1, nSides);
+                    local nRoll = RNG.random(1, nSides);
                     assert(math.maxinteger == nil or nTotal <= math.maxinteger - nRoll,
                            "Dice total exceeds the integer range.");
                     nTotal = nTotal + nRoll;
@@ -304,7 +302,7 @@ namespace CoG {
             for nAttempt = 1, nAttempts do
                 -- Draw in (0, 100]: zero chance cannot succeed, and fractional
                 -- chances retain their supplied probability instead of rounding up.
-                local nNewRoll = (1 - RNG._random()) * RNG._n100;
+                local nNewRoll = (1 - RNG.random()) * RNG._n100;
                 nRoll = math.min(nRoll, nNewRoll);
                 bSuccess = nRoll <= nChance;
 

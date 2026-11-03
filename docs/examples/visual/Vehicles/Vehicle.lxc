@@ -1,0 +1,69 @@
+--[[!
+@fqxn Examples.Vehicles.Vehicle
+@desc Concrete garage policy: copy fuel/components/tags, share owner, create fresh hooks.
+!]]
+namespace Examples.Vehicles {
+    class Vehicle : CoG.CoGVehicle {
+        public enum EVENT within Examples.Vehicles.Vehicle { INSPECTION; }
+        private InspectionCount = 0;
+        private EventEnvironment = "_ENV";
+        private LastEnvironment = "No event dispatched yet";
+        --[[!
+        @fqxn Examples.Vehicles.Vehicle.Vehicle
+        @desc Passes named settings to CoGVehicle and creates one ordinary Lua inspection callback.
+        !]]
+        public Vehicle(tSettings) {
+            base((tSettings or {}).fuel, (tSettings or {}).unmanned, (tSettings or {}).efficiency, (tSettings or {}).components, (tSettings or {}).value, (tSettings or {}).tradeable,
+                (tSettings or {}).quest, (tSettings or {}).exclusive, (tSettings or {}).inimitable, (tSettings or {}).speed, (tSettings or {}).owner, (tSettings or {}).name,
+                (tSettings or {}).description, (tSettings or {}).rarity, (tSettings or {}).environment);
+            local t = tSettings or {};
+            this.EventEnvironment = t.environment or "_ENV";
+            -- Keep saved application callbacks in ordinary Lua source, outside compiled LXC methods.
+            local fInspection = require("examples.visual.Vehicles.Events").inspection(this);
+            this.eventrix.addHook(Vehicle.EVENT.INSPECTION, fInspection);
+        }
+        --[[!
+        @fqxn Examples.Vehicles.Vehicle.recordInspection
+        @desc Records a callback result on this vehicle without changing the configured event environment.
+        !]]
+        public recordInspection(sObservedEnvironment) {
+            this.InspectionCount = this.InspectionCount + 1;
+            this.LastEnvironment = sObservedEnvironment;
+        }
+        --[[!
+        @fqxn Examples.Vehicles.Vehicle.getInspectionCount
+        @desc Returns the number of inspection events handled by this vehicle.
+        !]]
+        public getInspectionCount() { return this.InspectionCount; }
+        --[[!
+        @fqxn Examples.Vehicles.Vehicle.getEventEnvironment
+        @desc Returns the registered environment selected when this vehicle was constructed.
+        !]]
+        public getEventEnvironment() { return this.EventEnvironment; }
+        --[[!
+        @fqxn Examples.Vehicles.Vehicle.getLastEnvironment
+        @desc Returns the lexical environment label observed by the latest callback.
+        !]]
+        public getLastEnvironment() { return this.LastEnvironment; }
+        -- Copy mutable gameplay components while retaining the external owner identity.
+        --[[!
+        @fqxn Examples.Vehicles.Vehicle.clone
+        @desc Copies fuel, component objects and tags; retains owner identity and creates a fresh inspection hook.
+        !]]
+        public override operator clone() {
+            local tComponents = this.getComponents();
+            for sSlot, oPart in pairs(tComponents) do
+                tComponents[sSlot] = type.isnull(oPart) and null or clone(oPart);
+            end
+            local oCopy = Vehicle({fuel=clone(this.getFuelPool()), components=tComponents,
+                owner=this.getOwner(), name=this.getName().." copy", description=this.getDescription(),
+                rarity=this.getRarity(), environment=this.EventEnvironment,
+                efficiency=this.getDistancePerFuelUnit(), value=this.getValue(), speed=this.getMaxSpeed(),
+                unmanned=this.isUnmanned(), tradeable=this.isTradable(), quest=this.isQuest(),
+                exclusive=this.isExclusive(), inimitable=this.isInimitable()});
+            for sTag, bEnabled in this.getTagSystem().eachTag() do oCopy.getTagSystem().add(sTag, not bEnabled); end
+            return oCopy;
+        }
+    }
+}
+

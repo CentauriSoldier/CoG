@@ -1,4 +1,158 @@
 --[[!
+@fqxn CoG.Factorium.Guide
+@desc <h3>A repository of definitions, not an object factory</h3>
+    <p>Factorium merges blueprint defaults, validates definitions, resolves mod eligibility
+    and exposes accepted definitions. It never constructs gameplay objects or returns its
+    private class references. The host chooses mod order, supplies capabilities and retains
+    the factory function used to create objects from returned definitions.</p>
+    <p>Put the CoG repository root on package.path before requiring LuaEx.init so native
+    declarations are discovered. Initialize configuration with require("cog.load")().
+    Use CoG.Factorium and CoG.BaseMod; these classes have no automatic short aliases.</p>
+!]]
+
+--[[!
+@fqxn CoG.Factorium.Guide.Contracts
+@desc <h3>Register an explicit contract for each participating class</h3>
+    <p>Participating classes descend from CoG.CoGBase. After native publication, call
+    registerClass(class, contract). The plain contract contains a plain Blueprint defaults
+    table, validateBlueprint function and fromBlueprint function. Validation returns true or
+    false with a reason. Factorium checks the factory's presence but never calls or exposes
+    it; keep the contract's factory for construction in the host.</p>
+    <p>Explicit contracts avoid hiding inherited static members, which LXC forbids. Defaults
+    and validators are collected from registered participating ancestors, root to leaf;
+    nonparticipating intermediate classes contribute no defaults or validator. Register all
+    intended ancestors before importing definitions. Registration order itself is unrestricted.
+    Adding an ancestor later affects subsequent imports, not already compiled definitions.</p>
+    <p>Registration caches successes and failures by class identity. It retains references to
+    the defaults table and validator function. Changes inside retained defaults are rechecked
+    on import; replacing references on the caller's contract table does not change the cached
+    contract. The repository does not infer these contracts from same-named class statics.</p>
+@ex local tDragonContract = {
+    Blueprint = {health = 500, element = "fire"},
+    validateBlueprint = function(tBlueprint)
+        return type(tBlueprint.health) == "number" and tBlueprint.health > 0,
+            "health must be positive";
+    end,
+    fromBlueprint = function(tBlueprint, tContext)
+        return Dragon(tBlueprint, tContext);
+    end,
+};
+assert(CoG.Factorium.registerClass(Dragon, tDragonContract));
+!]]
+
+--[[!
+@fqxn CoG.Factorium.Guide.DeclarationTiming
+@desc <h3>Static constructors declare; the host registers after publication</h3>
+    <p>During native static initialization, a class identity exists before its namespace is
+    published. Call declareClass(class, contract) there instead of immediate registerClass.
+    A successful declaration means the request was queued, not that the class registered.
+    Repeating a declaration keeps its first accepted contract.</p>
+    <p>After LuaEx discovery or an explicit lxc.loadSources/loadFiles batch returns, call
+    registerDeclaredClasses before importing mods. It preflights publication of every pending
+    class before traversing ancestry. An early call returns false without poisoning the
+    registration cache. Completed requests are not repeated; a failing request stays pending.
+    The host must check the result. No factory or gameplay constructor runs in either step.</p>
+@ex -- After discovery/publication completes:
+require("LuaEx.init");
+require("cog.load")();
+assert(CoG.Factorium.registerDeclaredClasses());
+!]]
+
+--[[!
+@fqxn CoG.Factorium.Guide.DefinitionData
+@desc <h3>Blueprint data and merging</h3>
+    <p>Plain tables merge recursively, including numeric keys. Missing fields inherit; false,
+    zero and empty strings override. Additional fields survive unless a validator rejects
+    them. Keys may be strings, numbers or plain tables; table keys match by identity. Cycles
+    through keys or values are rejected, while shared acyclic tables are allowed.</p>
+    <p>Class identities, instances, metatable-bearing tables and userdata are not definition
+    data. Function values retain their closures and are not executed by blueprint compilation.
+    Ancestor validators receive separate definition copies, in root-to-leaf order. Invalid
+    metadata rejects a mod; an invalid blueprint rejects that definition rather than the
+    entire otherwise valid mod.</p>
+!]]
+
+--[[!
+@fqxn CoG.Factorium.Guide.HostWorkflow
+@desc <h3>Load, run, finalize, query and construct</h3>
+    <p>setEnvironment retains the host's actual table, starting with an empty environment.
+    loadMod compiles a text file without executing it and queues successful chunks in host
+    order. runMods consumes that queue and imports returned mod tables. Replacing the
+    environment affects subsequent loads; existing chunks retain the old table. There is
+    no automatic host-global fallback or execution-time limit.</p>
+    <p>Finalize before queries, and again after changing activation or imported mods. Construct
+    objects through the host-retained contract factory, outside Factorium. The following
+    example assumes Dragon, tDragonContract, tSpawnContext and tModEnvironment were prepared
+    by the application and that participating classes have already been registered.</p>
+@ex local Factorium = CoG.Factorium;
+assert(Factorium.setEnvironment(tModEnvironment));
+assert(Factorium.loadMod("mods/Dragons.lua"));
+Factorium.runMods();
+Factorium.finalizeImports();
+local tBlueprint, sModID = Factorium.getBlueprint(Dragon, "fire_dragon");
+if (tBlueprint) then
+    local oDragon = tDragonContract.fromBlueprint(tBlueprint, tSpawnContext);
+end
+!]]
+
+--[[!
+@fqxn CoG.Factorium.Guide.ModMetadata
+@desc <h3>The returned mod table</h3>
+    <p>importMod also accepts a BaseMod subclass instance through getInfo. BaseMod and
+    Factorium share BaseMod.validateModInfo for metadata validation. Authors and relationship
+    lists are dense numeric arrays. Malformed relationship UUIDs reject the mod; optional
+    dependency/conflict lists default to empty, and UUID case is normalized. Blueprint class
+    names resolve the exact registered qualified class name.</p>
+@ex return {
+    id = "27bdc9c3-7452-4c36-b9bf-ab318216926a",
+    name = "Dragons",
+    authors = {"Example Author"},
+    description = "Adds dragon definitions.",
+    released = "2026-10-13",
+    updated = "2026-10-13",
+    version = 1,
+    contact = "", -- Optional.
+    website = "", -- Optional.
+    required = {}, -- Optional dependency UUIDs.
+    conflicts = {}, -- Optional incompatible UUIDs.
+    blueprints = {
+        {id = "fire_dragon", class = "Game.Dragon", health = 500},
+    },
+};
+!]]
+
+--[[!
+@fqxn CoG.Factorium.Guide.Eligibility
+@desc <h3>Dependencies, conflicts, replacement and query boundaries</h3>
+    <p>Finalization removes missing/inactive dependency chains, then resolves conflicts in
+    load order. Either side may declare a conflict; later mods lose. If a winner loses a
+    required mod, eligibility and its conflict claims are reconsidered. Circular requirements
+    are allowed when the complete group remains eligible.</p>
+    <p>Blueprint IDs are global. The last valid definition from an accepted mod wins, even
+    if the target class changes; earlier definitions stay private for possible restoration.
+    setModActive, removeMod and replaceMod require another finalizeImports before queries.
+    Replacement keeps the mod's position and requested activation state. Invalid replacement
+    definitions retain that mod's old definition for the same ID; omitted definitions are removed.</p>
+    <p>getBlueprint(class, id) returns an independent definition copy and source mod ID.
+    getBlueprints(class) returns an ID-keyed map of blueprint/modID records. Queries apply
+    only to the exact registered class; ancestry queries and random selection belong to the
+    caller. Missing IDs return nil and empty class catalogs return an empty table. Queries
+    never expose the stored class references.</p>
+    <p>The retired registerFactory, addBlueprint and Factorium.fromBlueprint APIs are not
+    the current workflow. Native contract and lifecycle regressions live under dev/tests,
+    including factorium_regression.lua and factorium_timing_regression.lua.</p>
+!]]
+
+--[[!
+@fqxn CoG.Factorium.Guide.Logging
+@desc <h3>Diagnostics do not control import success</h3>
+    <p>setLog accepts a function or an object with a dot-call log method and also supplies
+    BaseMod's logger. Passing nil selects lazy BaseLog fallback. Factorium.log is created
+    only when fallback logging needs it; there are no LuaEx class-load levels. Logger failures
+    are contained, and getWarnings returns copied retained messages. BaseMod can select its
+    logger independently and uses BaseMod.log for its own lazy fallback.</p>
+!]]
+--[[!
 @fqxn CoG.Factorium
 @desc Repository of compiled blueprint definitions. Defaults and validators follow
     CoG ancestry; mod order, conflicts and publication remain host controlled.
@@ -461,7 +615,7 @@ namespace CoG {
                 @ret boolean bRegistered Whether every queued request completed.
                 @ret string|nil sReason Timing or registration failure.
                 @vis static public
-                @ex require("LuaEx.load")(5);
+                @ex require("LuaEx.init");
                 @ex require("cog.load")(2, "CoGConfig");
                 @ex assert(CoG.Factorium.registerDeclaredClasses());
             !]]

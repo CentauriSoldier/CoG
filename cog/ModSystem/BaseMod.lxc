@@ -1,4 +1,16 @@
 --[[!
+@fqxn CoG.BaseMod.Guide
+@desc <h3>Metadata and definitions, without lifecycle ownership</h3>
+    <p>BaseMod validates and commits metadata only after complete validation. Invalid input
+    logs a warning and leaves declared metadata defaults intact rather than raising a
+    constructor exception. getInfo supplies metadata for Factorium, which owns acceptance,
+    rejection reasons and activation. BaseMod supplies no mod lifecycle hooks.</p>
+    <p>Returned author, dependency and conflict arrays are copies. Raw blueprint entries are
+    retained for Factorium to validate individually. A logger function or dot-call log object
+    may be supplied through setLog; the fallback lazily uses BaseMod.log. Warnings are retained
+    even if external logging fails. Factorium.setLog also supplies this class's logger.</p>
+!]]
+--[[!
 @fqxn CoG.BaseMod
 @desc Base for game-specific mod objects. Metadata is validated before any commit;
     rejected metadata logs a warning and retains unset defaults. Factorium owns

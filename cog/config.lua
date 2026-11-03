@@ -10,8 +10,8 @@
     contents, allowing new keys and shorter lists. The marker is not runtime data.
     StatusTracker effect declarations belong in the selected CoG.EFFECT enum.
     The final table and its ordinary subtables are read-only at runtime.
-    TIER references the canonical CoG.TIER declaration loaded before classes. Project
-    overrides load first so the selected tier is available to dependent defaults.
+    TIER references the canonical CoG.TIER declaration loaded before classes. Enum
+    overrides are selected during discovery, before these settings are assembled.
     The bundled Rarity section receives that selected enum explicitly.
 !]]
 local _sConfigModule, _tConfigOptions = ...; -- require may supply a filename as its second argument.
@@ -111,14 +111,13 @@ end
 
 -- Declaration identities are fixed before classes; configuration selects settings.
 assert(not (rawtype(tUserConfig.Rarity) == "table" and tUserConfig.Rarity.LEVEL ~= nil),
-    "Rarity config LEVEL declarations belong in Rarity.lxc; use NAME for display labels.");
+    "Rarity uses the shared CoG.LEVEL enum; use NAME for configured rarity rows.");
 assert(not (rawtype(tUserConfig.CoGVehicle) == "table" and tUserConfig.CoGVehicle.COMPONENT ~= nil),
     "CoGVehicle COMPONENT declarations belong in CoGVehicle.lxc, not configuration.");
 assert(tUserConfig.StatusTracker == nil,
     "StatusTracker effect declarations belong in CoG.EFFECT, not configuration.");
-local eTier = tUserConfig.TIER;
-if (eTier == nil) then eTier = require(_sConfigModule..".TIER"); end
-assert(rawequal(eTier, CoG.TIER), "CoG config TIER must reference the declared CoG.TIER enum.");
+-- Enum selection is complete before configuration; use the published identity directly.
+local eTier = CoG.TIER;
 
 -- Always load framework-adjacent defaults; Rarity must use the selected tier.
 local tConfig = {
@@ -135,7 +134,7 @@ local tConfig = {
 };
 tConfig = applySettings(copySettings(tConfig, {}, false), tUserConfig, {}, {});
 assert(tConfig.Rarity.LEVEL == nil,
-    "Rarity config LEVEL declarations belong in Rarity.lxc; use NAME for display labels.");
+    "Rarity uses the shared CoG.LEVEL enum; use NAME for configured rarity rows.");
 assert(tConfig.CoGVehicle.COMPONENT == nil,
     "CoGVehicle COMPONENT declarations belong in CoGVehicle.lxc, not configuration.");
 

@@ -262,7 +262,7 @@ return function(Entries, Rarity)
         must be a CoGObject; nil creates a detached system. Defaults use owner rarity
         or the first configured rarity. The dispatcher uses the optional environment.
         @param CoGObject|nil oOwner External host, or nil to detach.
-        @param Rarity.LEVEL|nil eRarity Initial rarity; defaults to owner rarity or the first level.
+        @param CoG.LEVEL|nil eRarity Initial rarity; defaults to owner rarity or the first level.
         @param string|nil sEnvironment Registered environment name for the owned eventrix.
         @param boolean|nil bOwnerLocked True for an owned CoGObject component.
     !]]
@@ -279,8 +279,9 @@ return function(Entries, Rarity)
         local sOwnerClass = oOwner and bOwnerLocked and class.getname(oOwner) or "";
         pri.token = setmetatable({ownerClass = sOwnerClass, locked = bOwnerLocked == true}, _tTokenMeta);
         pri.events = eventrix(sEnvironment);
-        pri.rarity = eRarity or (oOwner and oOwner.getRarity()) or Rarity.LEVEL[1];
-        assert(lxe.isMember(pri.rarity, Rarity.LEVEL), "Invalid affix rarity.");
+        pri.rarity = eRarity or (oOwner and oOwner.getRarity()) or Rarity.MinLevel;
+        assert(lxe.isMember(pri.rarity, CoG.LEVEL), "Invalid affix rarity.");
+        Rarity.getName(pri.rarity); -- Require a configured ordinal before retaining this level.
 
         -- The host installs its component only after this constructor returns.
         _tOwners[pri.token] = setmetatable({oOwner}, {__mode = "v"});
@@ -424,7 +425,7 @@ return function(Entries, Rarity)
         @fqxn CoG.AffixSystem.Methods.getRarity
         @pulsarlua function AffixSystem.getRarity
         @desc Uses live owner rarity, or saved/configured rarity while detached.
-        @ret Rarity.LEVEL eRarity Live owner rarity or detached fallback.
+        @ret CoG.LEVEL eRarity Live owner rarity or detached fallback.
     !]]
     Service.methods.getRarity = function(this, tPrivate)
         local oOwner = this.getOwner();
@@ -437,12 +438,13 @@ return function(Entries, Rarity)
         @pulsarlua function AffixSystem.canSetRarity
         @desc Checks maximum tier and independent prefix/suffix limits. Minimum
         generation tiers/counts do not prohibit incremental application or removal.
-        @param Rarity.LEVEL eRarity Proposed or initial rarity member.
+        @param CoG.LEVEL eRarity Proposed or initial rarity member.
         @ret boolean bAllowed True when the operation is eligible.
         @ret string|nil sReason Rejection reason; nil when eligible.
     !]]
     Service.methods.canSetRarity = function(this, tPrivate, eRarity)
-        assert(lxe.isMember(eRarity, Rarity.LEVEL), "Expected a configured rarity member.");
+        assert(lxe.isMember(eRarity, CoG.LEVEL), "Expected a configured rarity member.");
+        Rarity.getName(eRarity); -- Bounds checking belongs to the rarity query service.
 
         local pri = tPrivate;
         if (pri.busy) then
@@ -467,10 +469,10 @@ return function(Entries, Rarity)
         @pulsarlua function AffixSystem.setRarity
         @desc Validates limits and delegates an attached change to the owner.
         Returns this, success, rarity or nil, reason. Rejection changes no state.
-        @param Rarity.LEVEL eRarity Proposed or initial rarity member.
+        @param CoG.LEVEL eRarity Proposed or initial rarity member.
         @ret AffixSystem this This system.
         @ret boolean bSuccess True when the change is accepted.
-        @ret Rarity.LEVEL|nil eRarity Accepted rarity; nil on rejection.
+        @ret CoG.LEVEL|nil eRarity Accepted rarity; nil on rejection.
         @ret string|nil sReason Rejection reason; nil on success.
     !]]
     Service.methods.setRarity = function(this, tPrivate, eRarity)
@@ -793,7 +795,7 @@ return function(Entries, Rarity)
     !]]
     Service.methods.getName = function(this, tPrivate, sBaseName)
         local pri = tPrivate;
-        if (this.getRarity() == Rarity.LEVEL.VI and pri.explicitName ~= "") then
+        if (this.getRarity() == CoG.LEVEL.SIX and pri.explicitName ~= "") then
             return pri.explicitName;
         end
 
@@ -896,7 +898,7 @@ return function(Entries, Rarity)
     Service.validateSnapshot = function(this, tState)
         local pri = tState;
         assert(type(pri.token) == "AffixSystemToken" and type(pri.events) == "eventrix", "Invalid affix component.");
-        assert(pri.busy == false and lxe.isMember(pri.rarity, Rarity.LEVEL), "Invalid saved affix limits.");
+        assert(pri.busy == false and lxe.isMember(pri.rarity, CoG.LEVEL), "Invalid saved affix limits.");
         type.assert.string(pri.explicitName);
         type.assert.table(pri.callbacks);
         type.assert["function"](pri.callbacks.onAdd);

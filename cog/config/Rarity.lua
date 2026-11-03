@@ -11,14 +11,14 @@ return {
         maxTier = TIER.VI,--NOTE: every rarity's maximum affix tier must be no higher than this cap
     },
     --[[!
-    @fqxn CoG.Rarity.Enums.LEVEL
-    @pulsarlua table Rarity.LEVEL
+    @fqxn CoG.Config.Rarity.Rows
+    @pulsarlua table CoGBase.config.Rarity
     @desc
     <div class="text-center" style="margin: 20px;">
         <div class="alert" style="background-color: #CCDC90; color: #333333; border-radius: 15px; padding: 10px; display: inline-block;">
             <b>The Following Table Details the Rarity Levels and Corresponding Color, Chance, and Affix Tiers</b>
             <br>
-            <i>Rarity levels are defined in CoG's <a href="#CoG.Config" style="color: #00797d;">config</a> file.</i>
+            <i>Rarity row settings are defined in CoG's <a href="#CoG.Config" style="color: #00797d;">config</a> file.</i>
         </div>
     </div>
     <table class="table table-bordered">

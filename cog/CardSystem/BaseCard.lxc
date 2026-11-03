@@ -65,7 +65,7 @@ namespace CoG {
         Specialized card fields and effects belong to developer-defined subclasses.
         @param string|nil sName Name passed to CoGObject; defaults to Card.
         @param string|nil sDescription Description passed to CoGObject; defaults to A card.
-        @param Rarity.LEVEL|nil eRarity Rarity passed to CoGObject; invalid/omitted values use its
+        @param CoG.LEVEL|nil eRarity Rarity passed to CoGObject; invalid/omitted values use its
         default.
         @param string|nil wEventrix Optional event-handler environment name passed to CoGObject.
         @param boolean|nil bFaceUp Whether the card starts face up, default false.

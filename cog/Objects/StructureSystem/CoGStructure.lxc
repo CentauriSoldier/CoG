@@ -15,7 +15,7 @@ namespace CoG {
             CoGObject. Concrete subclasses call this constructor through base.
         @param string sName Structure name containing non-whitespace text.
         @param string sDescription Nonblank structure description.
-        @param Rarity.LEVEL|nil eRarity Initial rarity; defaults to the first level.
+        @param CoG.LEVEL|nil eRarity Initial rarity; defaults to the first level.
         @param string|nil wEventrix Registered event environment name.
         @throws Invalid metadata or inherited initialization errors.
         !]]

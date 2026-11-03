@@ -57,6 +57,8 @@ namespace CoG {
         private static const DEFAULT_ASPECT_IMPACTOR_BASE_VALUE = 1;
         private static _tNodeData = setmetatable({}, {__mode = "k"});
         private static _tRoverData = setmetatable({}, {__mode = "k"});
+        -- Weak node keys release discarded maps; each node retains at most eight cost profiles.
+        private static _tSearchCache = setmetatable({}, {__mode = "k"});
         private static _tUtil = {
             mapTypeIsValid = function(nType)
                 return  rawtype(nType) == "number" and
@@ -165,63 +167,422 @@ namespace CoG {
         }
 
         --[[!
-        @fqxn CoG.AStar.Helpers.pathLabelDominates
-        @desc Compares per-rover route costs and affordable-prefix progress without discarding valid group routes.
-        !]]
-        private static pathLabelDominates(tLeft, tRightCosts, nRightProgress, tRovers) {
-            local bRet = true;
-            local bStrictlyCheaper = true;
-
-            for _, oRover in ipairs(tRovers) do
-                local nLeft = tLeft.costs[oRover];
-                local nRight = tRightCosts[oRover];
-                bStrictlyCheaper = bStrictlyCheaper and nLeft < nRight;
-
-                if (nLeft > nRight) then
-                    bRet = false;
-                    break;
-                end
-            end
-
-            --A route strictly cheaper for every member cannot lose a total-cost tie.
-            --This also discards positive-cost cycles regardless of apparent prefix progress.
-            return bRet and (bStrictlyCheaper or tLeft.progress >= nRightProgress);
-        }
-
-        --[[!
         @fqxn CoG.AStar.Helpers.findPath
-        @desc Searches outgoing neighbors and ports using nondominated per-rover cost vectors and the original tie rule.
+        @desc Searches outgoing neighbors and ports using nondominated per-rover cost vectors and the original tie rule. A stable heap orders equal scores by insertion; per-search read caches are discarded around live passage predicates. Validated weak-key node caches reuse immutable geometry and numeric terrain/profile work across replans. Callback-free graphs use conservative reverse cost bounds without changing queue order or equal-cost ties; callback-driven searches retain their live traversal order. Equivalent cost responses share dense numeric dimensions; differing budgets still constrain the affordable prefix. Passage predicates refine dimensions when responses diverge, preserving historical costs and individual rover identities.
         !]]
         private static findPath(oStart, oEnd, tRovers) {
-            local oSystem = AStar.pathNodeSystem(oStart);
-            local tCosts  = {};
-            local tOpen   = {};
-            local tLabels = {};
-            local tNodes  = {};
-            local tTotals = {};
+            local oSystem        = AStar.pathNodeSystem(oStart);
+            local tCosts         = {};
+            local tOpen          = {};
+            local tLabels        = {};
+            local tNodes         = {};
+            local tTotals        = {};
+            local tSystems       = {};
+            local tNeighbors     = {};
+            local tPhysical      = {};
+            local tPassable      = {};
+            local tEntryCosts    = {};
+            local tBudgets       = {};
+            local tAspectNames   = {};
+            local tAspectIndices = {};
+            local tTerrain       = {};
+            local tLayerAllowed  = {};
+            local tAbhorred      = {};
+            local tShared        = AStar._tSearchCache;
+            local tDimensions    = {{rovers = tRovers}};
+            local nDimensions    = 1;
+            local nSequence      = 0;
             local oResult;
 
-            for _, oRover in ipairs(tRovers) do
-                tCosts[oRover] = 0;
-                tTotals[oRover] = 0;
+            -- Node geometry and owned component identities do not change in place.
+            -- Numeric terrain values are revalidated on first use in every search,
+            -- and again after a live passage predicate invalidates local reads.
+            local function fSnapshot(oNode)
+                local tData = AStar._tNodeData[oNode];
+                if (tData == nil) then return nil; end
+                local tSnapshot = tShared[oNode];
+
+                if (tSnapshot == nil or tSnapshot.data ~= tData) then
+                    tSnapshot = {data = tData, system = AStar.pathNodeSystem(oNode), aspects = {}, costs = {}};
+                    for sName, oAspect in pairs(tData.aspectsByName) do
+                        tSnapshot.aspects[#tSnapshot.aspects + 1] = {name = sName, impactor = oAspect.getImpactor()};
+                    end
+                    tShared[oNode] = tSnapshot;
+                end
+
+                return tSnapshot;
             end
 
-            local tStart = {node = oStart, costs = tCosts, score = 0, previous = nil, active = true, progress = 1, withinBudget = true};
-            tOpen[1] = tStart;
-            tLabels[oStart] = {tStart};
+            local function fTerrain(oNode)
+                local tSnapshot = tTerrain[oNode];
+                if (tSnapshot ~= nil) then return tSnapshot; end
+                tSnapshot = fSnapshot(oNode);
+                if (tSnapshot == nil) then return nil; end
+                local bChanged = tSnapshot.baseCost ~= tSnapshot.data.baseCost;
 
-            --A zero heuristic is admissible for every geometry and arbitrary port shortcuts.
-            --Keep nondominated cost vectors: one scalar per node loses valid group routes.
-            while (#tOpen > 0) do
-                local nBest = 1;
+                for _, tAspect in ipairs(tSnapshot.aspects) do
+                    local nValue = tAspect.impactor.getValue();
+                    if (nValue ~= tAspect.value) then bChanged = true; end
+                    tAspect.value = nValue;
+                end
+                tSnapshot.baseCost = tSnapshot.data.baseCost;
+                if (bChanged) then tSnapshot.costs = {}; end
+                tTerrain[oNode] = tSnapshot;
+                return tSnapshot;
+            end
 
-                for nIndex = 2, #tOpen do
-                    if (tOpen[nIndex].score < tOpen[nBest].score) then
-                        nBest = nIndex;
+            local function fEntryCost(oNode, tDimension)
+                local tSnapshot = fTerrain(oNode);
+                if (tSnapshot == nil) then return oNode.getEntryCost(tDimension.rovers[1]); end
+
+                for _, tCached in ipairs(tSnapshot.costs) do
+                    local bMatches = #tCached.profile == #tAspectNames;
+                    for nAspect = 1, #tAspectNames do
+                        if (tCached.names[nAspect] ~= tAspectNames[nAspect] or
+                            tCached.profile[nAspect] ~= tDimension.profile[nAspect]) then
+                            bMatches = false;
+                            break;
+                        end
+                    end
+                    if (bMatches) then return tCached.value; end
+                end
+
+                local nBaseCost = tSnapshot.baseCost;
+                local nCost = nBaseCost;
+                for _, tAspect in ipairs(tSnapshot.aspects) do
+                    if (tAspect.value > 0) then
+                        nCost = nCost + nBaseCost * tAspect.value * tDimension.profile[tAspectIndices[tAspect.name]];
+                    end
+                end
+                nCost = math.clamp(nCost, AStar.NODE_ENTRY_COST_MIN, AStar.NODE_ENTRY_COST_MAX);
+
+                -- Bound retained work when many different groups visit the same node.
+                if (#tSnapshot.costs >= 8) then table.remove(tSnapshot.costs, 1); end
+                tSnapshot.costs[#tSnapshot.costs + 1] = {profile = tDimension.profile, names = tAspectNames, value = nCost};
+                return nCost;
+            end
+
+            local function fPassable(oNode)
+                local tData = AStar._tNodeData[oNode];
+                if (tData == nil) then return oNode.isPassable(tRovers); end
+                if (not tData.isPassable) then return false; end
+                local bLayerAllowed = tLayerAllowed[tData.owner];
+
+                if (bLayerAllowed == nil) then
+                    bLayerAllowed = true;
+                    for _, oRover in ipairs(tRovers) do
+                        if (not oRover.isAllowedOnLayer(tData.owner)) then bLayerAllowed = false; break; end
+                    end
+                    tLayerAllowed[tData.owner] = bLayerAllowed;
+                end
+                if (not bLayerAllowed) then return false; end
+
+                local tSnapshot = fTerrain(oNode);
+                for _, tAspect in ipairs(tSnapshot.aspects) do
+                    if (tAspect.value > 0 and tAbhorred[tAspect.name]) then return false; end
+                end
+                for _, oRover in ipairs(tRovers) do
+                    for oResident in pairs(tData.rovers) do
+                        if (not oResident.allowsEntryTo(oRover)) then return false; end
+                    end
+                end
+                return true;
+            end
+
+            local function fPhysical(oNode)
+                local tSnapshot = fSnapshot(oNode);
+                if (tSnapshot == nil) then return nil; end
+                if (tSnapshot.physical == nil) then
+                    tSnapshot.physical = oNode.getNeighbors(true);
+                    tSnapshot.physicalSet = {};
+                    for _, oNeighbor in ipairs(tSnapshot.physical) do
+                        tSnapshot.physicalSet[oNeighbor] = true;
+                    end
+                end
+                return tSnapshot;
+            end
+
+            local function fNeighbors(oNode)
+                local tAdjacent = tNeighbors[oNode];
+                if (tAdjacent ~= nil) then return tAdjacent; end
+                local tSnapshot = fPhysical(oNode);
+                if (tSnapshot == nil) then
+                    tAdjacent = oNode.getNeighbors();
+                else
+                    tAdjacent = {};
+                    local tSeen = {};
+                    for _, oNeighbor in ipairs(tSnapshot.physical) do
+                        tAdjacent[#tAdjacent + 1] = oNeighbor;
+                        tSeen[oNeighbor] = true;
+                    end
+                    for oNeighbor in pairs(tSnapshot.data.ports) do
+                        if (oNeighbor ~= oNode and not tSeen[oNeighbor]) then
+                            tAdjacent[#tAdjacent + 1] = oNeighbor;
+                            tSeen[oNeighbor] = true;
+                        end
+                    end
+                    tPhysical[oNode] = tSnapshot.physicalSet;
+                end
+                tNeighbors[oNode] = tAdjacent;
+                return tAdjacent;
+            end
+
+            -- Cost dimensions are private to this search. Permissions and callbacks
+            -- still receive every actual rover, independently of cost equivalence.
+            local function fRefineDimensions()
+                local tRefined = {};
+                tAbhorred = {};
+                for _, oRover in ipairs(tRovers) do
+                    for sAspect, bAbhors in pairs(oRover.getAbhorations()) do
+                        if (bAbhors) then tAbhorred[sAspect] = true; end
                     end
                 end
 
-                local tCurrent = table.remove(tOpen, nBest);
+                for nPrevious, tDimension in ipairs(tDimensions) do
+                    local tPartitions = {};
+
+                    for _, oRover in ipairs(tDimension.rovers) do
+                        local tProfile = {};
+                        local tMatch;
+
+                        for nAspect, sAspect in ipairs(tAspectNames) do
+                            local oAffinity = oRover.getAffinity(sAspect);
+                            local oAversion = oRover.getAversion(sAspect);
+                            tProfile[nAspect] = oAversion.getValue() - oAffinity.getValue();
+                        end
+
+                        for _, tPartition in ipairs(tPartitions) do
+                            local bMatches = true;
+                            for nAspect = 1, #tAspectNames do
+                                if (tProfile[nAspect] ~= tPartition.profile[nAspect]) then
+                                    bMatches = false;
+                                    break;
+                                end
+                            end
+                            if (bMatches) then tMatch = tPartition; break; end
+                        end
+
+                        if (tMatch == nil) then
+                            tMatch = {rovers = {}, profile = tProfile, previous = nPrevious};
+                            tPartitions[#tPartitions + 1] = tMatch;
+                            tRefined[#tRefined + 1] = tMatch;
+                        end
+                        tMatch.rovers[#tMatch.rovers + 1] = oRover;
+                    end
+                end
+
+                -- A callback may separate previously equivalent responses. Split all
+                -- historical labels without losing either rover's accumulated cost.
+                -- Never merge old dimensions: their route histories may differ.
+                if (#tRefined > nDimensions) then
+                    for _, tNodeLabels in pairs(tLabels) do
+                        for _, tLabel in ipairs(tNodeLabels) do
+                            local tPreviousCosts = tLabel.costs;
+                            local tRefinedCosts = {};
+                            for nDimension, tDimension in ipairs(tRefined) do
+                                tRefinedCosts[nDimension] = tPreviousCosts[tDimension.previous];
+                            end
+                            tLabel.costs = tRefinedCosts;
+                        end
+                    end
+                end
+
+                tDimensions = tRefined;
+                nDimensions = #tDimensions;
+            end
+
+            -- Dense numeric vectors avoid class dispatch and temporary label records
+            -- in the comparison loop. Keep the original strict-cost/prefix tie rule.
+            local function fDominates(tLeft, nLeftProgress, tRight, nRightProgress)
+                local bStrictlyCheaper = true;
+
+                for nDimension = 1, nDimensions do
+                    local nLeft  = tLeft[nDimension];
+                    local nRight = tRight[nDimension];
+                    if (nLeft > nRight) then return false; end
+                    bStrictlyCheaper = bStrictlyCheaper and nLeft < nRight;
+                end
+
+                return bStrictlyCheaper or nLeftProgress >= nRightProgress;
+            end
+
+            -- A stable heap keeps the original first-in ordering for equal scores.
+            local function fEarlier(tLeft, tRight)
+                return tLeft.score < tRight.score or
+                    (tLeft.score == tRight.score and tLeft.sequence < tRight.sequence);
+            end
+
+            local function fPush(tLabel)
+                local nIndex = #tOpen + 1;
+                local nParent;
+                nSequence = nSequence + 1;
+                tLabel.sequence = nSequence;
+
+                while (nIndex > 1) do
+                    nParent = nIndex // 2;
+                    if (not fEarlier(tLabel, tOpen[nParent])) then break; end
+                    tOpen[nIndex] = tOpen[nParent];
+                    nIndex = nParent;
+                end
+
+                tOpen[nIndex] = tLabel;
+            end
+
+            local function fPop()
+                local tFirst = tOpen[1];
+                local tLast  = table.remove(tOpen);
+                local nCount = #tOpen;
+                local nIndex = 1;
+                local nChild;
+
+                if (nCount > 0) then
+                    while (nIndex * 2 <= nCount) do
+                        nChild = nIndex * 2;
+                        if (nChild < nCount and fEarlier(tOpen[nChild + 1], tOpen[nChild])) then
+                            nChild = nChild + 1;
+                        end
+                        if (not fEarlier(tOpen[nChild], tLast)) then break; end
+                        tOpen[nIndex] = tOpen[nChild];
+                        nIndex = nChild;
+                    end
+
+                    tOpen[nIndex] = tLast;
+                end
+
+                return tFirst;
+            end
+
+            -- Build exact independent cost lower bounds over the group-passable
+            -- directed graph. Unknown/restored ownership and any live predicate
+            -- retain the existing search, including its callback evaluation order.
+            local function fBuildBounds()
+                if (oStart == oEnd) then return nil; end
+                local tGraph = {[oStart] = {previous = {}}};
+                local tQueue = {oStart};
+                local tLayouts = {};
+                local nHead = 1;
+
+                while (nHead <= #tQueue) do
+                    local oNode = tQueue[nHead];
+                    local tSnapshot = fSnapshot(oNode);
+                    nHead = nHead + 1;
+                    if (tSnapshot == nil or next(tSnapshot.data.portPassageRules) ~= nil) then return nil; end
+                    local nType = tSnapshot.data.type;
+
+                    if (nType == AStar.MAP_TYPE_HEX_FLAT or nType == AStar.MAP_TYPE_HEX_POINTED or nType == AStar.MAP_TYPE_STAGGERED) then
+                        local oMap = tSnapshot.data.owner.getOwner();
+                        local bValid = tLayouts[oMap];
+                        if (bValid == nil) then
+                            local tStagger = oMap.getStagger();
+                            bValid = tStagger.axis ~= nil and tStagger.index ~= nil;
+                            tLayouts[oMap] = bValid;
+                        end
+                        if (not bValid) then return nil; end
+                    end
+
+                    for _, oNeighbor in ipairs(fNeighbors(oNode)) do
+                        local tNeighbor = fSnapshot(oNeighbor);
+                        if (tNeighbor == nil) then return nil; end
+                        if (tNeighbor.system == oSystem) then
+                            local bPassable = tPassable[oNeighbor];
+                            if (bPassable == nil) then
+                                bPassable = fPassable(oNeighbor);
+                                tPassable[oNeighbor] = bPassable;
+                            end
+                            if (bPassable) then
+                                if (tGraph[oNeighbor] == nil) then
+                                    tGraph[oNeighbor] = {previous = {}};
+                                    tQueue[#tQueue + 1] = oNeighbor;
+                                end
+                                local tPrevious = tGraph[oNeighbor].previous;
+                                tPrevious[#tPrevious + 1] = oNode;
+                            end
+                        end
+                    end
+                end
+
+                if (tGraph[oEnd] == nil) then return {unreachable = true}; end
+                for _, oNode in ipairs(tQueue) do
+                    local tEntry = {};
+                    for nDimension, tDimension in ipairs(tDimensions) do
+                        tEntry[nDimension] = fEntryCost(oNode, tDimension);
+                    end
+                    tEntryCosts[oNode] = tEntry;
+                end
+
+                local tDistances = {};
+                local nUpper = math.huge;
+                for nDimension = 1, nDimensions do
+                    local tDistance = {[oEnd] = 0};
+                    local tNext = {};
+                    fPush({node = oEnd, score = 0});
+
+                    while (#tOpen > 0) do
+                        local tCurrent = fPop();
+                        if (tCurrent.score == tDistance[tCurrent.node]) then
+                            local nCost = tCurrent.score + tEntryCosts[tCurrent.node][nDimension];
+                            for _, oPrevious in ipairs(tGraph[tCurrent.node].previous) do
+                                if (tDistance[oPrevious] == nil or nCost < tDistance[oPrevious]) then
+                                    tDistance[oPrevious] = nCost;
+                                    tNext[oPrevious] = tCurrent.node;
+                                    fPush({node = oPrevious, score = nCost});
+                                end
+                            end
+                        end
+                    end
+                    tDistances[nDimension] = tDistance;
+
+                    -- Each independent shortest route is also a feasible group
+                    -- route. Its largest individual total supplies an upper bound;
+                    -- the final route still comes from the original ordered search.
+                    local tRouteCosts = {};
+                    for nIndex = 1, nDimensions do tRouteCosts[nIndex] = 0; end
+                    local oNode = oStart;
+                    while (oNode ~= oEnd) do
+                        oNode = tNext[oNode];
+                        if (oNode == nil) then return nil; end
+                        for nIndex = 1, nDimensions do
+                            tRouteCosts[nIndex] = tRouteCosts[nIndex] + tEntryCosts[oNode][nIndex];
+                        end
+                    end
+                    local nScore = 0;
+                    for nIndex = 1, nDimensions do nScore = math.max(nScore, tRouteCosts[nIndex]); end
+                    nUpper = math.min(nUpper, nScore);
+                end
+
+                -- Reverse and forward additions can round differently. Keep a
+                -- conservative margin; never prune a numerical/equal-cost tie.
+                local nMargin = 8 * #tQueue * #tQueue * 2^-52 * AStar.NODE_ENTRY_COST_MAX;
+                return {distances = tDistances, upper = nUpper, margin = nMargin};
+            end
+
+            for _, sAspect in pairs(oSystem.aspectNames) do
+                tAspectNames[#tAspectNames + 1] = sAspect;
+            end
+            table.sort(tAspectNames);
+            for nAspect, sAspect in ipairs(tAspectNames) do tAspectIndices[sAspect] = nAspect; end
+            fRefineDimensions();
+
+            for nDimension = 1, nDimensions do
+                tCosts[nDimension] = 0;
+            end
+            for _, oRover in ipairs(tRovers) do
+                tTotals[oRover] = 0;
+            end
+
+            local tBounds = fBuildBounds();
+            nSequence = 0;
+            if (tBounds and tBounds.unreachable) then return tNodes, tTotals, false; end
+
+            local tStart = {node = oStart, costs = tCosts, score = 0, previous = nil, active = true, progress = 1, withinBudget = true};
+            fPush(tStart);
+            tLabels[oStart] = {tStart};
+
+            -- Keep the original cost-ordered queue and nondominated cost vectors.
+            -- Strict goal bounds discard only branches unable to beat or tie a feasible route.
+            -- Caches live only for this search; each passage rule still runs live.
+            while (#tOpen > 0) do
+                local tCurrent = fPop();
 
                 if (oResult ~= nil and tCurrent.score > oResult.score) then
                     break;
@@ -233,9 +594,55 @@ namespace CoG {
                             oResult = tCurrent;
                         end
                     else
-                        for _, oNeighbor in ipairs(tCurrent.node.getNeighbors()) do
-                            if (AStar.pathNodeSystem(oNeighbor) == oSystem and tCurrent.node.canTraverseTo(oNeighbor, tRovers) and oNeighbor.isPassable(tRovers)) then
-                                local tEntry        = oNeighbor.getEntryCosts(tRovers);
+                        local tAdjacent = fNeighbors(tCurrent.node);
+
+                        for _, oNeighbor in ipairs(tAdjacent) do
+                            local bSameSystem = tSystems[oNeighbor];
+                            local bTraversable = false;
+                            local bPassable;
+
+                            if (bSameSystem == nil) then
+                                local tSnapshot = fSnapshot(oNeighbor);
+                                bSameSystem = (tSnapshot and tSnapshot.system or AStar.pathNodeSystem(oNeighbor)) == oSystem;
+                                tSystems[oNeighbor] = bSameSystem;
+                            end
+
+                            if (bSameSystem) then
+                                local tEdges = tPhysical[tCurrent.node];
+                                if (tEdges == nil) then
+                                    tEdges = {};
+                                    for _, oPhysical in ipairs(tCurrent.node.getNeighbors(true)) do
+                                        tEdges[oPhysical] = true;
+                                    end
+                                    tPhysical[tCurrent.node] = tEdges;
+                                end
+
+                                -- Physical adjacency always wins over a parallel port rule.
+                                bTraversable = tEdges[oNeighbor] == true;
+                                if (not bTraversable) then
+                                    local bHasPassageRule = AStar._tNodeData[tCurrent.node].portPassageRules[oNeighbor] ~= nil;
+                                    bTraversable = tCurrent.node.canUsePort(oNeighbor, tRovers);
+
+                                    -- A predicate may change terrain, budgets, occupancy or ports.
+                                    -- Discard cached reads even when it rejects this passage.
+                                    if (bHasPassageRule) then
+                                        tNeighbors, tPhysical, tPassable, tEntryCosts, tBudgets = {}, {}, {}, {}, {};
+                                        tTerrain, tLayerAllowed = {}, {};
+                                        fRefineDimensions();
+                                    end
+                                end
+
+                                if (bTraversable) then
+                                    bPassable = tPassable[oNeighbor];
+                                    if (bPassable == nil) then
+                                        bPassable = fPassable(oNeighbor);
+                                        tPassable[oNeighbor] = bPassable;
+                                    end
+                                end
+                            end
+
+                            if (bTraversable and bPassable) then
+                                local tEntry        = tEntryCosts[oNeighbor];
                                 local tNext         = {};
                                 local nScore        = 0;
                                 local bDominated    = false;
@@ -243,27 +650,58 @@ namespace CoG {
                                 local nProgress     = tCurrent.progress;
                                 local tExisting     = tLabels[oNeighbor] or {};
 
-                                for _, oRover in ipairs(tRovers) do
-                                    tNext[oRover] = tCurrent.costs[oRover] + tEntry[oRover];
-                                    nScore = math.max(nScore, tNext[oRover]);
-                                    local oPoints = oRover.getMovePointPool();
-                                    bWithinBudget = bWithinBudget and tNext[oRover] <= oPoints.get();
+                                if (tEntry == nil) then
+                                    tEntry = {};
+                                    for nDimension, tDimension in ipairs(tDimensions) do
+                                        tEntry[nDimension] = fEntryCost(oNeighbor, tDimension);
+                                    end
+                                    tEntryCosts[oNeighbor] = tEntry;
+                                end
+
+                                for nDimension, tDimension in ipairs(tDimensions) do
+                                    tNext[nDimension] = tCurrent.costs[nDimension] + tEntry[nDimension];
+                                    nScore = math.max(nScore, tNext[nDimension]);
+
+                                    if (bWithinBudget) then
+                                        local nBudget = tBudgets[nDimension];
+                                        if (nBudget == nil) then
+                                            nBudget = math.huge;
+                                            for _, oRover in ipairs(tDimension.rovers) do
+                                                local oPoints = oRover.getMovePointPool();
+                                                nBudget = math.min(nBudget, oPoints.get());
+                                            end
+                                            tBudgets[nDimension] = nBudget;
+                                        end
+                                        bWithinBudget = tNext[nDimension] <= nBudget;
+                                    end
                                 end
 
                                 if (bWithinBudget) then
                                     nProgress = nProgress + 1;
                                 end
 
-                                for _, tLabel in ipairs(tExisting) do
-                                    if (tLabel.active and AStar.pathLabelDominates(tLabel, tNext, nProgress, tRovers)) then
-                                        bDominated = true;
-                                        break;
+                                if (tBounds) then
+                                    for nDimension = 1, nDimensions do
+                                        local nRemaining = tBounds.distances[nDimension][oNeighbor] or math.huge;
+                                        if (tNext[nDimension] + nRemaining > tBounds.upper + tBounds.margin) then
+                                            bDominated = true;
+                                            break;
+                                        end
                                     end
                                 end
 
                                 if (not bDominated) then
                                     for _, tLabel in ipairs(tExisting) do
-                                        if (tLabel.active and AStar.pathLabelDominates({costs = tNext, progress = nProgress}, tLabel.costs, tLabel.progress, tRovers)) then
+                                        if (tLabel.active and fDominates(tLabel.costs, tLabel.progress, tNext, nProgress)) then
+                                            bDominated = true;
+                                            break;
+                                        end
+                                    end
+                                end
+
+                                if (not bDominated) then
+                                    for _, tLabel in ipairs(tExisting) do
+                                        if (tLabel.active and fDominates(tNext, nProgress, tLabel.costs, tLabel.progress)) then
                                             tLabel.active = false;
                                         end
                                     end
@@ -271,7 +709,7 @@ namespace CoG {
                                     local tNextLabel = {node = oNeighbor, costs = tNext, score = nScore, previous = tCurrent, active = true, progress = nProgress, withinBudget = bWithinBudget};
                                     tExisting[#tExisting + 1] = tNextLabel;
                                     tLabels[oNeighbor] = tExisting;
-                                    tOpen[#tOpen + 1] = tNextLabel;
+                                    fPush(tNextLabel);
                                 end
                             end
                         end
@@ -280,7 +718,11 @@ namespace CoG {
             end
 
             if (oResult ~= nil) then
-                tTotals = oResult.costs;
+                for nDimension, tDimension in ipairs(tDimensions) do
+                    for _, oRover in ipairs(tDimension.rovers) do
+                        tTotals[oRover] = oResult.costs[nDimension];
+                    end
+                end
                 local tCurrent = oResult;
 
                 while (tCurrent ~= nil) do

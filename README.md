@@ -20,8 +20,7 @@ Place the `LuaEx` and `cog` folders on your Lua module search path, keeping each
 framework's scripts and subfolders together. Initialize LuaEx first:
 
 ```lua
-local initLuaEx = require("LuaEx.load");
-initLuaEx();
+require("LuaEx.init");
 
 local initCoG = require("cog.load");
 local CoGBase = initCoG();
@@ -34,16 +33,16 @@ is available as `CoGBase.config`.
 Classes live directly in the `CoG` namespace, for example `CoG.CoGBase`.
 `CoG` is the namespace; `CoGBase` is the common base class.
 
-Requiring a loader returns its initializer without running it. CoG checks that
-`LUAEX_INIT == true` and requires LuaEx class-load level 3 or higher; LuaEx's
-default initialization includes those dependencies. Successful subsequent calls
+Requiring `LuaEx.init` initializes the full LuaEx framework immediately. Requiring
+`cog.load` returns its initializer; call it afterward to assemble CoG configuration.
+CoG requires `LUAEX_INIT == true`. Successful subsequent CoG initialization calls
 return the same initialized class.
 
 `CoG.BaseMod` and `CoG.Factorium` are native classes discovered by LuaEx,
 without short aliases. Factorium retains blueprint merging, ancestry validation,
 mod ordering and override history. Participating classes now supply their own
 contract to `CoG.Factorium.registerClass(cClass, tContract)`; see the
-[mod-system guide](cog/ModSystem/README.md) before updating existing callers.
+[mod-system guide](cog/ModSystem/Factorium.lxc) before updating existing callers.
 
 `CoG.SlotPattern` supplies relative occupied-cell layouts, with copied inputs,
 coordinate validation, snapshot iterators and native cloning/persistence.
@@ -205,7 +204,7 @@ later per-entry validation. `setLog` accepts a callback or logger object, and
 contained. Native `clone`, `serialize` and `deserialize` preserve class identity,
 independent instance data and read-only metadata.
 
-`Factorium` remains a separate legacy migration. Its importer is designed to
+`CoG.Factorium` is a native blueprint repository. Its importer is designed to
 import blueprints, merge class defaults, run validators and resolve dependency, conflict and
 override rules. You can enable, replace or remove mods, finalize eligibility,
 then query the definitions available to your game.
@@ -213,7 +212,7 @@ then query the definitions available to your game.
 Classes declare their blueprint contracts and construct objects through
 `fromBlueprint` with the runtime context they need. The host controls load order
 and which capabilities mod code can access. The
-[blueprint guide](cog/ModSystem/README.md) explains registration, imports and
+[blueprint guide](cog/ModSystem/Factorium.lxc) explains registration, imports and
 object creation.
 
 Shared object foundations tie these systems together. `CoGObject` supplies

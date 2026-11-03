@@ -18,7 +18,7 @@ return function(CoGBase, Rarity, cSystem)
     local _tSystems        = setmetatable({}, {__mode = "k"});
     local _tMethods        = setmetatable({}, {__mode = "k"});
     local _tDefinitions    = {};
-    local _cSystem = cSystem;
+    local _cSystem         = cSystem;
     local _tEntryMeta;
     local _tJournalMeta;
     local _tTokenMeta;
@@ -802,5 +802,3 @@ return function(CoGBase, Rarity, cSystem)
         createAffix = Service.createAffix,
     };
 end;
-
-

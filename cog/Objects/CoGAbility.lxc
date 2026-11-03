@@ -24,7 +24,7 @@ namespace CoG {
             use callback. Each ability owns independent cost state.
         @param string sName Nonblank ability name.
         @param string sDescription Nonblank ability description.
-        @param Rarity.LEVEL|nil eRarity Initial inherited rarity.
+        @param CoG.LEVEL|nil eRarity Initial inherited rarity.
         @param string|nil wEventrix Registered event environment name.
         @param function|nil fOnUseCallback Use callback; nil selects the default no-op.
         !]]

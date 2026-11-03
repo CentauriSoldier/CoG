@@ -1,0 +1,144 @@
+[
+  {
+    "id": "classes/BlueprintFactory.lua",
+    "title": "BlueprintFactory",
+    "group": "CoG",
+    "path": "examples/classes/BlueprintFactory.lua",
+    "kind": "console",
+    "description": "BlueprintFactory example from the classes & factories collection.",
+    "codePath": "examples/code/classes/BlueprintFactory.lua",
+    "inputs": []
+  },
+  {
+    "id": "classes/Creature.lua",
+    "title": "Creature",
+    "group": "CoG",
+    "path": "examples/classes/Creature.lua",
+    "kind": "console",
+    "description": "Creature example from the classes & factories collection.",
+    "codePath": "examples/code/classes/Creature.lua",
+    "inputs": []
+  },
+  {
+    "id": "classes/Human.lua",
+    "title": "Human",
+    "group": "CoG",
+    "path": "examples/classes/Human.lua",
+    "kind": "console",
+    "description": "Human example from the classes & factories collection.",
+    "codePath": "examples/code/classes/Human.lua",
+    "inputs": []
+  },
+  {
+    "id": "classes/Soldier.lua",
+    "title": "Soldier",
+    "group": "CoG",
+    "path": "examples/classes/Soldier.lua",
+    "kind": "console",
+    "description": "Soldier example from the classes & factories collection.",
+    "codePath": "examples/code/classes/Soldier.lua",
+    "inputs": []
+  },
+  {
+    "id": "cog/Cards.lua",
+    "title": "Cards & decks",
+    "group": "CoG",
+    "path": "examples/cog/Cards.lua",
+    "kind": "console",
+    "description": "Draw, shuffle, flip and edit real BaseCard instances across a deck, hand and discard pile.",
+    "codePath": "examples/code/cog/Cards.lua",
+    "visualPath": "examples/visual/Cards/browser.lua",
+    "visualType": "cards",
+    "inputs": []
+  },
+  {
+    "id": "cog/Tiled.lua",
+    "title": "Tiled",
+    "group": "CoG",
+    "path": "examples/cog/Tiled.lua",
+    "kind": "console",
+    "description": "Explore square and both hex maps, scout/goblin terrain costs, cave permissions, path movement and TMX editing.",
+    "codePath": "examples/code/cog/Tiled.lua",
+    "visualPath": "examples/visual/Tiled/browser.lua",
+    "visualType": "tiled",
+    "inputs": []
+  },
+  {
+    "id": "cog/Vehicles.lua",
+    "title": "Vehicles",
+    "group": "CoG",
+    "path": "examples/cog/Vehicles.lua",
+    "kind": "console",
+    "description": "Explore an illustrated garage: fuel, trips, component identity, constructor settings, concrete cloning and validation.",
+    "visualPath": "examples/visual/Vehicles/browser.lua",
+    "visualType": "vehicles",
+    "codePath": "examples/code/cog/Vehicles.lua",
+    "inputs": []
+  },
+  {
+    "id": "components/ItemSlotSystem.lua",
+    "title": "Item system",
+    "group": "CoG",
+    "path": "examples/components/ItemSlotSystem.lua",
+    "kind": "console",
+    "description": "A tabbed stash, character inventory, ground and shop: edit, move, save and load items, with owner reconnection and permission checks.",
+    "codePath": "examples/code/components/ItemSlotSystem.lua",
+    "visualPath": "examples/visual/ItemSystem/browser.lua",
+    "visualType": "items",
+    "inputs": []
+  },
+  {
+    "id": "components/Pool.lua",
+    "title": "Pool",
+    "group": "CoG",
+    "path": "examples/components/Pool.lua",
+    "kind": "console",
+    "description": "Capacity, reservation, modifiers, regeneration, and events.",
+    "codePath": "examples/code/components/Pool.lua",
+    "visualPath": "examples/visual/Pool/browser.lua",
+    "visualType": "pool",
+    "inputs": []
+  },
+  {
+    "id": "pathfinding/AStar.lua",
+    "title": "AStar",
+    "group": "CoG",
+    "path": "examples/pathfinding/AStar.lua",
+    "kind": "console",
+    "description": "Terrain-aware group routes and turn-by-turn movement.",
+    "codePath": "examples/code/pathfinding/AStar.lua",
+    "visualPath": "examples/visual/AStar/browser.lua",
+    "visualType": "astar",
+    "inputs": [
+      {
+        "name": "playback_speed",
+        "label": "playback speed",
+        "type": "number",
+        "default": 4,
+        "min": 1,
+        "max": 10,
+        "step": 1
+      }
+    ]
+  },
+  {
+    "id": "pathfinding/HexMap.lua",
+    "title": "HexMap",
+    "group": "CoG",
+    "path": "examples/pathfinding/HexMap.lua",
+    "kind": "console",
+    "description": "HexMap example from the pathfinding collection.",
+    "codePath": "examples/code/pathfinding/HexMap.lua",
+    "inputs": []
+  },
+  {
+    "id": "utilities/TagSystem.lua",
+    "title": "TagSystem",
+    "group": "CoG",
+    "path": "examples/utilities/TagSystem.lua",
+    "kind": "console",
+    "description": "Normalized tags, activation, copying and serialization.",
+    "codePath": "examples/code/utilities/TagSystem.lua",
+    "inputs": []
+  }
+]

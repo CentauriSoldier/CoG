@@ -1,0 +1,62 @@
+--[[!
+@fqxn Examples.Creatures
+@desc Small native inheritance hierarchy demonstrating CoG Pool composition.
+    Each instance owns its health; native graph cloning copies that Pool.
+!]]
+namespace Examples.Creatures {
+    class Creature {
+        private health = null;
+        --[[!
+        @fqxn Examples.Creatures.Creature.Creature
+        @desc Allocates an independent health Pool for this example creature.
+        !]]
+        public Creature(sName, nHealth) { this.health = CoG.Pool(nHealth, nHealth); }
+        -- Return the owned component; callers can adjust its resource state.
+        --[[!
+        @fqxn Examples.Creatures.Creature.getHealthPool
+        @desc Returns the owned Pool so callers can query or change health.
+        !]]
+        public getHealthPool() { return this.health; }
+        --[[!
+        @fqxn Examples.Creatures.Creature.takeDamage
+        @desc Subtracts damage through Pool clamping and returns this instance.
+        !]]
+        public takeDamage(nAmount) { this.health.adjust(-nAmount); return this; }
+        --[[!
+        @fqxn Examples.Creatures.Creature.isDead
+        @desc Reports whether current health has reached zero.
+        !]]
+        public isDead() { return this.health.get() == 0; }
+    }
+    class Human : Creature {
+        private name = "";
+        --[[!
+        @fqxn Examples.Creatures.Human.Human
+        @desc Initializes inherited health and stores this human’s name.
+        !]]
+        public Human(sName, nHealth) { base(sName, nHealth); this.name = sName; }
+        --[[!
+        @fqxn Examples.Creatures.Human.getName
+        @desc Returns the name supplied to the constructor.
+        !]]
+        public getName() { return this.name; }
+    }
+    class Soldier : Human {
+        public enum RANK within Examples.Creatures.Soldier { SCOUT; SERGEANT; CAPTAIN; }
+        private rank = null;
+        --[[!
+        @fqxn Examples.Creatures.Soldier.Soldier
+        @desc Initializes the human and requires a member of the owned rank enum.
+        !]]
+        public Soldier(sName, nHealth, eRank) {
+            base(sName, nHealth);
+            assert(lxe.isMember(eRank, Soldier.RANK), "Expected a soldier rank.");
+            this.rank = eRank;
+        }
+        --[[!
+        @fqxn Examples.Creatures.Soldier.getRank
+        @desc Returns the canonical rank enum member.
+        !]]
+        public getRank() { return this.rank; }
+    }
+}
